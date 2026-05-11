@@ -348,3 +348,16 @@ async def set_config(key: str, value: str):
         await db.execute('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)', (key, value))
         await db.commit()
 
+async def get_used_items_count() -> int:
+    """Hitung jumlah item yang sudah terpakai (is_used = 1)"""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("SELECT COUNT(*) FROM items WHERE is_used = 1")
+        row = await cursor.fetchone()
+        return row[0] if row else 0
+
+async def delete_all_used_items() -> int:
+    """Hapus semua item yang sudah terpakai (is_used = 1). Return jumlah yang dihapus."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("DELETE FROM items WHERE is_used = 1")
+        await db.commit()
+        return cursor.rowcount
