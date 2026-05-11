@@ -9,7 +9,7 @@ from source.database.queries import (
 from source.utils.helpers import pad_center, format_rupiah
 
 router = Router()
-ITEMS_PER_PAGE = 5
+ITEMS_PER_PAGE = 10
 BUTTON_COLS = 5
 BUTTON_WIDTH = 5
 
@@ -47,7 +47,7 @@ async def show_subcategories_by_edit(callback: CallbackQuery, state: FSMContext,
     has_banner = data.get('has_banner', False)
     cat_name = await get_category_name(category_id)
 
-    text = f"📂 *{cat_name}* (Halaman {page}/{total_pages})\n\n"
+    text = f"📂 *{cat_name}* (Hal {page}/{total_pages})\n\n"
     for i, (sub_id, name, price) in enumerate(subs, start=offset+1):
         stock = await get_stock_for_subcategory(sub_id)
         text += f"{i}. {name} - Rp{format_rupiah(price)} (Stok: {stock})\n"

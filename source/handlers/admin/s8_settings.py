@@ -26,19 +26,29 @@ async def settings_menu(callback: CallbackQuery):
         f"Pilih tindakan:"
     )
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🖼️ Upload Banner Toko", callback_data="settings_upload_banner")],
-        [InlineKeyboardButton(text="💳 Upload QRIS", callback_data="settings_upload_qris")],
-        [InlineKeyboardButton(text="🕒 Atur Auto Delete", callback_data="settings_auto_delete")],
-        [InlineKeyboardButton(text="« Kembali ke Panel", callback_data="admin_back")]
+        [InlineKeyboardButton(text="🖼️ Upload Banner Toko", callback_data="settings_upload_banner"),
+        InlineKeyboardButton(text="🗑️ Hapus Banner", callback_data="settings_delete_banner")],
+        [InlineKeyboardButton(text="💳 Upload QRIS", callback_data="settings_upload_qris"),
+        InlineKeyboardButton(text="🗑️ Hapus QRIS", callback_data="settings_delete_qris")],
+        [InlineKeyboardButton(text="🕒 Atur Auto Delete", callback_data="settings_auto_delete"),
+        InlineKeyboardButton(text="« Kembali ke Panel", callback_data="admin_back")]
     ])
     await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
     await callback.answer()
 
+# ========== UPLOAD / HAPUS BANNER ==========
 @router.callback_query(F.data == "settings_upload_banner")
 async def upload_banner_prompt(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer("📸 Kirimkan *foto banner* untuk toko Anda.", parse_mode="Markdown")
     await state.set_state(SettingsState.waiting_banner)
     await callback.answer()
+
+@router.callback_query(F.data == "settings_delete_banner")
+async def delete_banner(callback: CallbackQuery):
+    await set_config("banner_image_file_id", "")
+    await callback.message.answer("✅ Banner toko berhasil dihapus.")
+    # Refresh menu
+    await settings_menu(callback)
 
 @router.message(SettingsState.waiting_banner, F.photo)
 async def receive_banner(message: Message, state: FSMContext):
@@ -49,11 +59,19 @@ async def receive_banner(message: Message, state: FSMContext):
     from .admin import admin_cmd
     await admin_cmd(message)
 
+# ========== UPLOAD / HAPUS QRIS ==========
 @router.callback_query(F.data == "settings_upload_qris")
 async def upload_qris_prompt(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer("💳 Kirimkan *foto QRIS* untuk pembayaran.", parse_mode="Markdown")
     await state.set_state(SettingsState.waiting_qris)
     await callback.answer()
+
+@router.callback_query(F.data == "settings_delete_qris")
+async def delete_qris(callback: CallbackQuery):
+    await set_config("qris_image_file_id", "")
+    await callback.message.answer("✅ QRIS berhasil dihapus.")
+    # Refresh menu
+    await settings_menu(callback)
 
 @router.message(SettingsState.waiting_qris, F.photo)
 async def receive_qris(message: Message, state: FSMContext):
@@ -64,10 +82,14 @@ async def receive_qris(message: Message, state: FSMContext):
     from .admin import admin_cmd
     await admin_cmd(message)
 
+# ========== AUTO DELETE ==========
 @router.callback_query(F.data == "settings_auto_delete")
 async def auto_delete_prompt(callback: CallbackQuery, state: FSMContext):
     current = await get_config("auto_delete_used_days") or "7"
-    await callback.message.answer(f"Saat ini auto delete: *{current} hari*.\nKirimkan angka baru (0 untuk nonaktif).", parse_mode="Markdown")
+    await callback.message.answer(
+        f"Saat ini auto delete: *{current} hari*.\nKirimkan angka baru (0 untuk nonaktif).",
+        parse_mode="Markdown"
+    )
     await state.set_state(SettingsState.waiting_auto_delete)
     await callback.answer()
 

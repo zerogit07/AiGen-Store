@@ -7,7 +7,7 @@ from source.database.queries import get_all_categories, add_user, get_config
 from source.utils.helpers import pad_center
 
 router = Router()
-ITEMS_PER_PAGE = 5
+ITEMS_PER_PAGE = 10
 BUTTON_COLS = 5
 BUTTON_WIDTH = 5
 
@@ -37,7 +37,7 @@ async def cmd_start(message: Message, state: FSMContext):
         return
     total_pages = (total + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE
     banner = await get_config("banner_image_file_id")
-    text = f"📦 *Daftar Kategori (Halaman {page}/{total_pages})*\n\n"
+    text = f"📦 *Daftar Kategori Produk (Hal {page}/{total_pages})*\n\n"
     for i, (_, name) in enumerate(categories, start=offset+1):
         text += f"{i}. {name}\n"
     text += "\n👇 *Silakan pilih tombol angka di bawah*"
@@ -59,7 +59,7 @@ async def category_page(callback: CallbackQuery, state: FSMContext):
         await callback.answer("Halaman kosong.", show_alert=True)
         return
     total_pages = (total + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE
-    text = f"📦 *Daftar Kategori (Halaman {page}/{total_pages})*\n\n"
+    text = f"📦 *Daftar Kategori Produk (Hal {page}/{total_pages})*\n\n"
     for i, (_, name) in enumerate(categories, start=offset+1):
         text += f"{i}. {name}\n"
     text += "\n👇 *Silakan pilih tombol angka di bawah*"
@@ -80,7 +80,7 @@ async def show_categories(target, state: FSMContext, page: int = 1):
             await target.message.answer("📭 Belum ada kategori.")
         return
     total_pages = (total + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE
-    text = f"📦 *Daftar Kategori (Halaman {page}/{total_pages})*\n\n"
+    text = f"📦 *Daftar Kategori Produk (Hal {page}/{total_pages})*\n\n"
     for i, (_, name) in enumerate(categories, start=offset+1):
         text += f"{i}. {name}\n"
     text += "\n👇 *Silakan pilih tombol angka di bawah*"
