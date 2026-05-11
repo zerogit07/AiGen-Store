@@ -87,7 +87,7 @@ async def delete_used_items(subcategory_id: int):
         await db.execute('DELETE FROM items WHERE subcategory_id = ? AND is_used = 1', (subcategory_id,))
         await db.commit()
 
-# ========== ORDERS ==========
+# p1
 async def create_order(order_id: str, user_id: int, item_id: int, quantity: int, total_price: int, three_digits: str):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute('''
@@ -101,12 +101,27 @@ async def update_order_status(order_id: str, status: str):
         await db.execute('UPDATE orders SET status = ? WHERE id = ?', (status, order_id))
         await db.commit()
 
+async def add_user(user_id: int, username: str = None, first_name: str = None):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute('''
+            INSERT OR REPLACE INTO users (user_id, username, first_name, last_seen)
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+        ''', (user_id, username, first_name))
+        await db.commit()
+
+async def get_stock_for_subcategory(subcategory_id: int) -> int:
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute('SELECT COUNT(*) FROM items WHERE subcategory_id = ? AND is_used = 0', (subcategory_id,)) as cursor:
+            row = await cursor.fetchone()
+            return row[0] if row else 0
+
 # page 2
 async def get_category_name(cat_id: int):
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute('SELECT name FROM categories WHERE id = ?', (cat_id,)) as cursor:
             row = await cursor.fetchone()
             return row[0] if row else None
+
 
 #page 3
 async def get_subcategory_price_and_stock(subcategory_id: int):
@@ -238,6 +253,17 @@ async def get_orders_by_status(status: Optional[str], limit: int, offset: int):
                 total = (await cursor.fetchone())[0]
         return orders, total
 
+async def get_product_variant(variant_id: int):
+    """Mengambil data subkategori beserta nama kategori induknya."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute('''
+            SELECT s.id, c.name, s.name, s.price
+            FROM subcategories s
+            JOIN categories c ON s.category_id = c.id
+            WHERE s.id = ?
+        ''', (variant_id,)) as cursor:
+            return await cursor.fetchone()
+
 # s6 
 async def get_total_revenue():
     async with aiosqlite.connect(DB_PATH) as db:
@@ -314,3 +340,11 @@ async def delete_broadcast_job(job_id: int):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute('DELETE FROM broadcast_jobs WHERE id = ?', (job_id,))
         await db.commit()
+
+#s8
+
+async def set_config(key: str, value: str):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)', (key, value))
+        await db.commit()
+
