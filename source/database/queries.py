@@ -221,11 +221,6 @@ async def update_order_payment_proof(order_id: str, file_id: str):
         await db.execute('UPDATE orders SET payment_proof_file_id = ? WHERE id = ?', (file_id, order_id))
         await db.commit()
 
-async def get_order_by_id(order_id: str):
-    async with aiosqlite.connect(DB_PATH) as db:
-        async with db.execute('SELECT * FROM orders WHERE id = ?', (order_id,)) as cursor:
-            return await cursor.fetchone()
-
 async def get_order_details(subcategory_id: int):
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute('''
@@ -235,6 +230,11 @@ async def get_order_details(subcategory_id: int):
         ''', (subcategory_id,)) as cursor:
             row = await cursor.fetchone()
             return row if row else (None, None)
+
+async def get_order_by_id(order_id):
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("SELECT id, user_id, item_id, quantity, total_price, three_digits, payment_proof_file_id, status FROM orders WHERE id = ?", (order_id,))
+        return await cursor.fetchone()
 
 # s1
 # Tambahkan di source/database/queries.py
@@ -292,25 +292,6 @@ async def export_all_items_data():
             return await cursor.fetchall()
 
 # s5
-async def get_orders_by_status(status: Optional[str], limit: int, offset: int):
-    async with aiosqlite.connect(DB_PATH) as db:
-        if status:
-            query = 'SELECT * FROM orders WHERE status = ? ORDER BY created_at DESC LIMIT ? OFFSET ?'
-            params = (status, limit, offset)
-        else:
-            query = 'SELECT * FROM orders ORDER BY created_at DESC LIMIT ? OFFSET ?'
-            params = (limit, offset)
-        async with db.execute(query, params) as cursor:
-            orders = await cursor.fetchall()
-        # Hitung total
-        if status:
-            async with db.execute('SELECT COUNT(*) FROM orders WHERE status = ?', (status,)) as cursor:
-                total = (await cursor.fetchone())[0]
-        else:
-            async with db.execute('SELECT COUNT(*) FROM orders') as cursor:
-                total = (await cursor.fetchone())[0]
-        return orders, total
-
 async def get_product_variant(variant_id: int):
     """Mengambil data subkategori beserta nama kategori induknya."""
     async with aiosqlite.connect(DB_PATH) as db:
@@ -321,6 +302,24 @@ async def get_product_variant(variant_id: int):
             WHERE s.id = ?
         ''', (variant_id,)) as cursor:
             return await cursor.fetchone()
+            
+async def get_item_subcategory(item_id: int) -> int:
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("SELECT subcategory_id FROM items WHERE id = ?", (item_id,))
+        row = await cursor.fetchone()
+        return row[0] if row else None
+
+async def get_orders_by_status(status, limit=10, offset=0):
+    query = "SELECT id, user_id, item_id, quantity, total_price, three_digits, payment_proof_file_id, status FROM orders"
+    params = []
+    if status is not None:
+        query += " WHERE status = ?"
+        params.append(status)
+    query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+    params.extend([limit, offset])
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute(query, params)
+        return await cursor.fetchall(), ... # total count
 
 # s6 
 async def get_total_revenue():

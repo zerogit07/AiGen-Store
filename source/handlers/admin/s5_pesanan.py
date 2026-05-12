@@ -1,187 +1,265 @@
-# source/handlers/admin/s5_pesanan.py
+# s5_pesanan.py
+
 from aiogram import Router, F, Bot
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
-from source.config import ADMIN_ID, BOT_TOKEN
 from source.database.queries import (
-    get_orders_by_status, get_order_by_id, get_available_item,
-    mark_item_used, update_order_status, get_order_details,
-    get_product_variant
+    get_orders_by_status,
+    get_order_by_id,
+    get_available_item,
+    mark_item_used,
+    update_order_status,
+    get_order_details,
+    get_item_subcategory,
 )
 from source.utils.helpers import format_rupiah
+from source.config import BOT_TOKEN
 
 router = Router()
 bot = Bot(token=BOT_TOKEN)
-ITEMS_PER_PAGE = 5
 
-# ========== MENU UTAMA ==========
-@router.callback_query(F.data == "admin_orders")
-async def orders_menu(callback: CallbackQuery):
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+ORDERS_PER_PAGE = 5
+
+
+# ── Helper Keyboard ────────────────────────────
+def main_menu_keyboard():
+    return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📦 Pesanan Pending", callback_data="orders_pending")],
         [InlineKeyboardButton(text="📜 Riwayat Pesanan", callback_data="orders_history")],
-        [InlineKeyboardButton(text="« Kembali", callback_data="admin_back")]
+        [InlineKeyboardButton(text="« Kembali ke Panel", callback_data="admin_back")]
     ])
-    await callback.message.edit_text("📋 *Manajemen Pesanan*", parse_mode="Markdown", reply_markup=keyboard)
-    await callback.answer()
 
-# ========== PESANAN PENDING (TAMPIL PER ORDER) ==========
-@router.callback_query(F.data == "orders_pending")
-async def pending_orders(callback: CallbackQuery, page: int = 1):
-    offset = (page - 1) * ITEMS_PER_PAGE
-    orders, total = await get_orders_by_status('pending', ITEMS_PER_PAGE, offset)
-    total_pages = (total + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE
-    if not orders:
-        await callback.message.edit_text("📭 Tidak ada pesanan pending.", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="« Kembali", callback_data="admin_orders")]]))
-        await callback.answer()
-        return
-    # Tampilkan satu per satu (bisa juga daftar singkat, tapi lebih baik daftar untuk pending)
-    # Agar tidak terlalu panjang, kita buat daftar dengan tombol aksi di setiap pesan
-    for order in orders:
-        order_id, user_id, variant_id, qty, total_price, three_digits, proof, status, created_at = order
-        variant = await get_product_variant(variant_id)
-        product_name = variant[1] if variant else "?"
-        variant_name = variant[2] if variant else "?"
-        text = (
-            f"🆔 *Order:* `{order_id}`\n"
-            f"👤 *User:* `{user_id}`\n"
-            f"📦 *Produk:* {product_name} - {variant_name}\n"
-            f"🔢 *Jumlah:* {qty}\n"
-            f"💰 *Total:* Rp{format_rupiah(total_price)}\n"
-            f"🔑 *Kode Unik:* {three_digits}\n"
-            f"🕒 *Waktu:* {created_at[:16]}"
-        )
-        keyboard = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="✅ Setujui", callback_data=f"admin_approve_{order_id}"),
-             InlineKeyboardButton(text="❌ Tolak", callback_data=f"admin_reject_{order_id}"),
-             InlineKeyboardButton(text="📸 Bukti", callback_data=f"admin_proof_{order_id}")]
-        ])
-        await callback.message.answer(text, parse_mode="Markdown", reply_markup=keyboard)
-    # Tambahkan navigasi halaman jika diperlukan
-    if total_pages > 1:
-        nav = []
-        if page > 1:
-            nav.append(InlineKeyboardButton(text="◀ Sebelumnya", callback_data=f"pending_page_{page-1}"))
-        if page < total_pages:
-            nav.append(InlineKeyboardButton(text="Berikutnya ▶", callback_data=f"pending_page_{page+1}"))
-        if nav:
-            await callback.message.answer("Navigasi:", reply_markup=InlineKeyboardMarkup(inline_keyboard=[nav]))
-    await callback.answer()
 
-@router.callback_query(F.data.startswith("pending_page_"))
-async def pending_page(callback: CallbackQuery):
-    page = int(callback.data.split("_")[2])
-    await pending_orders(callback, page)
-
-# ========== RIWAYAT PESANAN (FILTER) ==========
-@router.callback_query(F.data == "orders_history")
-async def history_filter(callback: CallbackQuery):
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="📋 Semua", callback_data="orders_filter_all")],
-        [InlineKeyboardButton(text="⏳ Pending", callback_data="orders_filter_pending")],
-        [InlineKeyboardButton(text="✅ Disetujui", callback_data="orders_filter_approved")],
-        [InlineKeyboardButton(text="❌ Ditolak", callback_data="orders_filter_rejected")],
+def history_filter_keyboard():
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Semua", callback_data="history_all"),
+         InlineKeyboardButton(text="Pending", callback_data="history_pending")],
+        [InlineKeyboardButton(text="Disetujui", callback_data="history_approved"),
+         InlineKeyboardButton(text="Ditolak", callback_data="history_rejected")],
         [InlineKeyboardButton(text="« Kembali", callback_data="admin_orders")]
     ])
-    await callback.message.edit_text("📜 *Riwayat Pesanan*\nPilih filter:", parse_mode="Markdown", reply_markup=keyboard)
+
+
+# ── Entry: Menu Utama Pesanan ─────────────────
+@router.callback_query(F.data == "admin_orders")
+async def orders_main_menu(callback: CallbackQuery):
+    await callback.message.edit_text(
+        "🛒 *Manajemen Pesanan*\n\nPilih menu:",
+        parse_mode="Markdown",
+        reply_markup=main_menu_keyboard()
+    )
     await callback.answer()
 
-@router.callback_query(F.data.startswith("orders_filter_"))
-async def show_orders_by_filter(callback: CallbackQuery, page: int = 1):
-    filter_status = callback.data.split("_")[2]
-    if filter_status == "all":
-        status = None
-    else:
-        status = filter_status
-    offset = (page - 1) * ITEMS_PER_PAGE
-    orders, total = await get_orders_by_status(status, ITEMS_PER_PAGE, offset)
-    total_pages = (total + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE
+
+# ── PESANAN PENDING ───────────────────────────
+@router.callback_query(F.data == "orders_pending")
+async def show_pending_orders(callback: CallbackQuery, state: FSMContext, page: int = 1):
+    await show_pending_page(callback, page, state)
+
+
+async def show_pending_page(callback: CallbackQuery, page: int, state: FSMContext):
+    offset = (page - 1) * ORDERS_PER_PAGE
+    orders, total = await get_orders_by_status("pending", limit=ORDERS_PER_PAGE, offset=offset)
+    total_pages = max((total + ORDERS_PER_PAGE - 1) // ORDERS_PER_PAGE, 1)
+
     if not orders:
-        await callback.message.edit_text("📭 Tidak ada pesanan.", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="« Kembali", callback_data="admin_orders")]]))
-        await callback.answer()
+        text = "📦 *Pesanan Pending*\n\nTidak ada pesanan pending saat ini."
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="« Kembali", callback_data="admin_orders")]
+        ])
+        await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
         return
-    text = f"📜 *Riwayat Pesanan* (Halaman {page}/{total_pages})\n\n"
+
+    text = f"📦 *Pesanan Pending* (Hal {page}/{total_pages})\n\n"
     for order in orders:
-        order_id, user_id, variant_id, qty, total_price, three_digits, proof, status, created_at = order
-        variant = await get_product_variant(variant_id)
-        product_name = variant[1] if variant else "?"
-        variant_name = variant[2] if variant else "?"
+        # Unpack 9 kolom (sesuai schema tabel orders)
+        order_id, user_id, item_id, qty, total_price, three_digits, payment_proof, status, created_at = order
+        sub_name, cat_name = await get_order_details(item_id)
         text += (
-            f"🆔 `{order_id}` | {status}\n"
-            f"👤 {user_id}\n"
-            f"📦 {product_name} - {variant_name}\n"
-            f"💰 Rp{format_rupiah(total_price)} | Jml: {qty}\n"
-            f"🕒 {created_at[:16]}\n\n"
+            f"🔹 `{order_id}` | User: `{user_id}`\n"
+            f"   {cat_name} → {sub_name} (x{qty})\n"
+            f"   Total: Rp{format_rupiah(total_price)}\n\n"
         )
-    # Navigasi halaman
-    nav = []
+
+    # Tombol navigasi halaman
+    nav_buttons = []
     if page > 1:
-        nav.append(InlineKeyboardButton(text="◀ Sebelumnya", callback_data=f"history_page_{filter_status}_{page-1}"))
+        nav_buttons.append(InlineKeyboardButton(text="◀", callback_data=f"pendinglist_page_{page-1}"))
     if page < total_pages:
-        nav.append(InlineKeyboardButton(text="Berikutnya ▶", callback_data=f"history_page_{filter_status}_{page+1}"))
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[nav, [InlineKeyboardButton(text="« Kembali", callback_data="admin_orders")]]) if nav else InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="« Kembali", callback_data="admin_orders")]])
+        nav_buttons.append(InlineKeyboardButton(text="▶", callback_data=f"pendinglist_page_{page+1}"))
+
+    keyboard_rows = []
+    if nav_buttons:
+        keyboard_rows.append(nav_buttons)
+    keyboard_rows.append([InlineKeyboardButton(text="« Kembali", callback_data="admin_orders")])
+    keyboard = InlineKeyboardMarkup(inline_keyboard=keyboard_rows)
+
     await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
-    await callback.answer()
+    await state.update_data(pending_page=page)
 
-@router.callback_query(F.data.startswith("history_page_"))
-async def history_page(callback: CallbackQuery):
-    parts = callback.data.split("_")
-    filter_status = parts[2]
-    page = int(parts[3])
-    # Simulasi callback palsu
-    class DummyCallback:
-        data = f"orders_filter_{filter_status}"
-    await show_orders_by_filter(DummyCallback(), page)
 
-# ========== LIHAT BUKTI ==========
-@router.callback_query(F.data.startswith("admin_proof_"))
-async def show_proof(callback: CallbackQuery):
-    order_id = callback.data.split("_")[2]
-    order = await get_order_by_id(order_id)
-    if not order or not order[6]:
-        await callback.answer("Bukti tidak ditemukan.", show_alert=True)
-        return
-    await bot.send_photo(callback.from_user.id, order[6], caption=f"📸 Bukti pembayaran untuk order {order_id}")
-    await callback.answer()
+@router.callback_query(F.data.startswith("pendinglist_page_"))
+async def pending_list_page(callback: CallbackQuery, state: FSMContext):
+    page = int(callback.data.split("_")[2])
+    await show_pending_page(callback, page, state)
 
-# ========== SETUJUI ==========
-@router.callback_query(F.data.startswith("admin_approve_"))
-async def admin_approve(callback: CallbackQuery):
+
+# ── DETAIL ORDER + AKSI ─────────────────────
+@router.callback_query(F.data.startswith("order_detail_"))
+async def order_detail(callback: CallbackQuery, state: FSMContext):
     order_id = callback.data.split("_")[2]
     order = await get_order_by_id(order_id)
     if not order or order[7] != 'pending':
-        await callback.answer("❌ Pesanan tidak valid atau sudah diproses.", show_alert=True)
+        await callback.answer("Pesanan tidak valid atau sudah diproses.", show_alert=True)
+        data = await state.get_data()
+        page = data.get("pending_page", 1)
+        await show_pending_page(callback, page, state)
         return
-    variant_id = order[2]
-    item = await get_available_item(variant_id)
+
+    # Unpack 9 kolom dari fungsi get_order_by_id (harus mengembalikan 9 kolom)
+    user_id, item_id, qty, total, three_digits, status, = order[1], order[2], order[3], order[4], order[5], order[6], order[7], order[8]
+    sub_name, cat_name = await get_order_details(item_id)
+    text = (
+        f"📋 *Detail Pesanan*\n"
+        f"Order ID: `{order_id}`\n"
+        f"User ID: `{user_id}`\n"
+        f"Produk: {cat_name} → {sub_name}\n"
+        f"Jumlah: {qty}\n"
+        f"Total: Rp{format_rupiah(total)}\n"
+        f"Kode Unik: {three_digits}\n"
+        f"Status: {status}\n"
+    )
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="✅ Setujui", callback_data=f"approve_{order_id}"),
+         InlineKeyboardButton(text="❌ Tolak", callback_data=f"reject_{order_id}")],
+        [InlineKeyboardButton(text="📷 Lihat Bukti", callback_data=f"view_proof_{order_id}")],
+        [InlineKeyboardButton(text="« Kembali", callback_data="orders_pending")]
+    ])
+    await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
+    await state.update_data(current_order_id=order_id)
+
+
+# ── LIHAT BUKTI ────────────────────────────
+@router.callback_query(F.data.startswith("view_proof_"))
+async def view_proof(callback: CallbackQuery):
+    order_id = callback.data.split("_")[2]
+    order = await get_order_by_id(order_id)
+    if not order or not order[6]:
+        await callback.answer("Bukti tidak tersedia.", show_alert=True)
+        return
+    file_id = order[6]
+    await callback.message.answer_photo(file_id, caption=f"Bukti pembayaran untuk {order_id}")
+    await callback.answer()
+
+
+# ── APPROVE ────────────────────────────────
+@router.callback_query(F.data.startswith("approve_"))
+async def approve_order_handler(callback: CallbackQuery, state: FSMContext):
+    order_id = callback.data.split("_")[1]
+    order = await get_order_by_id(order_id)
+    if not order or order[7] != 'pending':
+        await callback.answer("Pesanan tidak valid.", show_alert=True)
+        return
+
+    sub_id = await get_item_subcategory(order[2])
+    item = await get_available_item(sub_id)
     if not item:
-        await callback.message.answer(f"❌ Stok habis untuk pesanan {order_id}. Tidak dapat menyetujui.")
-        await callback.answer("Stok habis", show_alert=True)
+        await callback.answer("Stok item habis.", show_alert=True)
         return
     item_id, code = item
     await mark_item_used(item_id, order_id)
     await update_order_status(order_id, 'approved')
+
     user_id = order[1]
     try:
-        await bot.send_message(user_id, f"✅ *Pesanan {order_id} disetujui!*\n\nKode Anda: `{code}`\nTerima kasih telah berbelanja.", parse_mode="Markdown")
-        await callback.message.edit_text(f"✅ Pesanan {order_id} telah disetujui. Kode sudah dikirim ke user.", reply_markup=None)
-    except Exception as e:
-        await callback.message.edit_text(f"✅ Pesanan {order_id} disetujui, tetapi gagal mengirim kode: {e}", reply_markup=None)
-    await callback.answer()
+        await bot.send_message(user_id, f"✅ Pesanan {order_id} disetujui!\nKode Anda: {code}")
+    except Exception:
+        pass
+    await callback.message.edit_text(f"✅ Pesanan {order_id} disetujui.")
+    data = await state.get_data()
+    page = data.get("pending_page", 1)
+    await show_pending_page(callback, page, state)
 
-# ========== TOLAK ==========
-@router.callback_query(F.data.startswith("admin_reject_"))
-async def admin_reject(callback: CallbackQuery):
-    order_id = callback.data.split("_")[2]
+
+# ── REJECT ─────────────────────────────────
+@router.callback_query(F.data.startswith("reject_"))
+async def reject_order_handler(callback: CallbackQuery, state: FSMContext):
+    order_id = callback.data.split("_")[1]
     order = await get_order_by_id(order_id)
     if not order or order[7] != 'pending':
-        await callback.answer("❌ Pesanan tidak valid atau sudah diproses.", show_alert=True)
+        await callback.answer("Pesanan tidak valid.", show_alert=True)
         return
     await update_order_status(order_id, 'rejected')
     user_id = order[1]
     try:
-        await bot.send_message(user_id, f"❌ *Pesanan {order_id} ditolak.*\nSilakan hubungi admin untuk informasi lebih lanjut.", parse_mode="Markdown")
-        await callback.message.edit_text(f"❌ Pesanan {order_id} ditolak. User sudah diberi tahu.", reply_markup=None)
-    except Exception as e:
-        await callback.message.edit_text(f"❌ Pesanan {order_id} ditolak, tetapi gagal notifikasi user: {e}", reply_markup=None)
+        await bot.send_message(user_id, f"❌ Pesanan {order_id} ditolak. Hubungi admin.")
+    except Exception:
+        pass
+    await callback.message.edit_text(f"❌ Pesanan {order_id} ditolak.")
+    data = await state.get_data()
+    page = data.get("pending_page", 1)
+    await show_pending_page(callback, page, state)
+
+
+# ── RIWAYAT PESANAN ───────────────────────
+@router.callback_query(F.data == "orders_history")
+async def history_menu(callback: CallbackQuery):
+    await callback.message.edit_text(
+        "📜 *Riwayat Pesanan*\n\nPilih filter:",
+        parse_mode="Markdown",
+        reply_markup=history_filter_keyboard()
+    )
     await callback.answer()
+
+
+@router.callback_query(F.data.startswith("history_"))
+async def history_show(callback: CallbackQuery, state: FSMContext, page: int = 1):
+    filter_status = callback.data.split("_")[1]
+    if filter_status == "all":
+        status = None
+    else:
+        status = filter_status
+    await show_history_page(callback, status, page, state)
+
+
+async def show_history_page(callback: CallbackQuery, status, page: int, state: FSMContext):
+    offset = (page - 1) * ORDERS_PER_PAGE
+    orders, total = await get_orders_by_status(status, ORDERS_PER_PAGE, offset)
+    total_pages = max((total + ORDERS_PER_PAGE - 1) // ORDERS_PER_PAGE, 1)
+
+    if not orders:
+        text = "📜 Tidak ada pesanan."
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="« Kembali", callback_data="orders_history")]
+        ])
+        await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
+        return
+
+    text = f"📜 *Riwayat Pesanan* (Hal {page}/{total_pages})\n\n"
+    for order in orders:
+        # Unpack 9 kolom
+        order_id, user_id, item_id, qty, total_price, three_digits, proof, order_status, created_at = order
+        sub_name, cat_name = await get_order_details(item_id)
+        text += (
+            f"🔹 `{order_id}` | User: `{user_id}` | Status: {order_status}\n"
+            f"   {cat_name} → {sub_name} (x{qty}) - Rp{format_rupiah(total_price)}\n\n"
+        )
+
+    nav_buttons = []
+    if page > 1:
+        nav_buttons.append(InlineKeyboardButton(text="◀", callback_data=f"histpage_{status or 'all'}_{page-1}"))
+    if page < total_pages:
+        nav_buttons.append(InlineKeyboardButton(text="▶", callback_data=f"histpage_{status or 'all'}_{page+1}"))
+    rows = [nav_buttons] if nav_buttons else []
+    rows.append([InlineKeyboardButton(text="« Kembali", callback_data="orders_history")])
+    keyboard = InlineKeyboardMarkup(inline_keyboard=rows)
+    await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
+    await state.update_data(history_status=status, history_page=page)
+
+
+@router.callback_query(F.data.startswith("histpage_"))
+async def history_page_nav(callback: CallbackQuery, state: FSMContext):
+    parts = callback.data.split("_")
+    status = parts[1] if parts[1] != 'all' else None
+    page = int(parts[2])
+    await show_history_page(callback, status, page, state)
