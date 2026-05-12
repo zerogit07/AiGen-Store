@@ -13,7 +13,8 @@ from source.config import BOT_TOKEN
 router = Router()
 bot = Bot(token=BOT_TOKEN)
 
-async def show_qris(callback: CallbackQuery, state: FSMContext):
+async def send_qris_message(message, state: FSMContext):
+    """Kirim pesan baru untuk halaman QRIS (bisa foto atau teks)"""
     data = await state.get_data()
     subcategory_id = data.get('selected_subcategory_id')
     qty = data.get('quantity', data.get('qty', 1))
@@ -22,7 +23,7 @@ async def show_qris(callback: CallbackQuery, state: FSMContext):
     three_digits = generate_three_digits()
     nominal = total + int(three_digits)
     order_id = str(uuid.uuid4())[:8]
-    user_id = callback.from_user.id
+    user_id = message.from_user.id
 
     await create_order(order_id, user_id, subcategory_id, qty, total, three_digits)
 
@@ -30,7 +31,6 @@ async def show_qris(callback: CallbackQuery, state: FSMContext):
     cat_name = await get_category_name_by_subcategory(subcategory_id)
     qris_file_id = await get_config("qris_image_file_id")
 
-    # Teks dengan nominal ditebalkan (sudah pakai **)
     caption = (
         f"📋 *Ringkasan Pesanan*\n"
         f"Kategori: {cat_name}\n"
@@ -49,13 +49,10 @@ async def show_qris(callback: CallbackQuery, state: FSMContext):
         [InlineKeyboardButton(text="« Kembali", callback_data="back_to_quantity_from_qris")]
     ])
 
-    # Hapus pesan sebelumnya (halaman input jumlah)
-    await callback.message.delete()
-
     if qris_file_id and qris_file_id.strip():
-        await callback.message.answer_photo(qris_file_id, caption=caption, parse_mode="Markdown", reply_markup=keyboard)
+        await message.answer_photo(qris_file_id, caption=caption, parse_mode="Markdown", reply_markup=keyboard)
     else:
-        await callback.message.answer(caption, parse_mode="Markdown", reply_markup=keyboard)
+        await message.answer(caption, parse_mode="Markdown", reply_markup=keyboard)
 
     await state.update_data(order_id=order_id)
     await state.set_state(UserState.confirming)
@@ -71,6 +68,9 @@ async def proof_prompt(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(UserState.confirming, F.data == "back_to_quantity_from_qris")
 async def back_to_quantity(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
-    from source.handlers.user.p3_input import update_quantity_message
+    # Hapus pesan P4 lalu kirim ulang P3
+    await callback.message.delete()
+    from source.handlers.user.p3_input import send_quantity_message
+    # Pastikan data qty, price, stock masih ada di state
+    await send_quantity_message(callback.message, state)
     await state.set_state(UserState.input_quantity)
-    await update_quantity_message(callback, state)

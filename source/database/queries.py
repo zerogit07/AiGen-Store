@@ -87,7 +87,7 @@ async def delete_used_items(subcategory_id: int):
         await db.execute('DELETE FROM items WHERE subcategory_id = ? AND is_used = 1', (subcategory_id,))
         await db.commit()
 
-# ========== ORDERS ==========
+# p1
 async def create_order(order_id: str, user_id: int, item_id: int, quantity: int, total_price: int, three_digits: str):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute('''
@@ -96,10 +96,24 @@ async def create_order(order_id: str, user_id: int, item_id: int, quantity: int,
         ''', (order_id, user_id, item_id, quantity, total_price, three_digits))
         await db.commit()
 
-async def update_order_status(order_id: str, status: str):
+async def update_order_status(order_id: str, new_status: str):
     async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute('UPDATE orders SET status = ? WHERE id = ?', (status, order_id))
+        await db.execute("UPDATE orders SET status = ? WHERE id = ?", (new_status, order_id))
         await db.commit()
+
+async def add_user(user_id: int, username: str = None, first_name: str = None):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute('''
+            INSERT OR REPLACE INTO users (user_id, username, first_name, last_seen)
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+        ''', (user_id, username, first_name))
+        await db.commit()
+
+async def get_stock_for_subcategory(subcategory_id: int) -> int:
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute('SELECT COUNT(*) FROM items WHERE subcategory_id = ? AND is_used = 0', (subcategory_id,)) as cursor:
+            row = await cursor.fetchone()
+            return row[0] if row else 0
 
 # page 2
 async def get_category_name(cat_id: int):
@@ -107,6 +121,7 @@ async def get_category_name(cat_id: int):
         async with db.execute('SELECT name FROM categories WHERE id = ?', (cat_id,)) as cursor:
             row = await cursor.fetchone()
             return row[0] if row else None
+
 
 #page 3
 async def get_subcategory_price_and_stock(subcategory_id: int):
@@ -118,7 +133,65 @@ async def get_subcategory_price_and_stock(subcategory_id: int):
             stock_row = await cursor.fetchone()
             stock = stock_row[0] if stock_row else 0
         return price, stock
+        
+async def get_available_items_by_subcategory(subcategory_id: int, limit: int = 10, offset: int = 0):
+    """Ambil item tersedia (is_used=0) dalam satu subkategori, support pagination."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute(
+            "SELECT id, code FROM items WHERE subcategory_id = ? AND is_used = 0 ORDER BY id LIMIT ? OFFSET ?",
+            (subcategory_id, limit, offset)
+        )
+        items = await cursor.fetchall()
+        # Hitung total
+        cursor2 = await db.execute(
+            "SELECT COUNT(*) FROM items WHERE subcategory_id = ? AND is_used = 0",
+            (subcategory_id,)
+        )
+        total = (await cursor2.fetchone())[0]
+        return items, total
 
+async def get_item_by_id(item_id: int):
+    """Ambil satu item berdasarkan id."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("SELECT id, subcategory_id, code, is_used FROM items WHERE id = ?", (item_id,))
+        return await cursor.fetchone()
+
+async def edit_item_code(item_id: int, new_code: str) -> bool:
+    """Ganti kode item, return True jika berhasil, False jika kode sudah ada di subkategori yang sama."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        # Ambil subcategory_id dulu
+        item = await db.execute_fetchall("SELECT subcategory_id FROM items WHERE id = ?", (item_id,))
+        if not item:
+            return False
+        sub_id = item[0][0]
+        # Cek apakah new_code sudah ada di subkategori yang sama (kecuali item ini sendiri)
+        cursor = await db.execute(
+            "SELECT id FROM items WHERE subcategory_id = ? AND code = ? AND id != ?",
+            (sub_id, new_code, item_id)
+        )
+        if await cursor.fetchone():
+            return False  # sudah ada
+        await db.execute("UPDATE items SET code = ? WHERE id = ?", (new_code, item_id))
+        await db.commit()
+        return True
+
+async def delete_single_item(item_id: int) -> bool:
+    """Hapus item jika is_used=0, return True jika berhasil."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("DELETE FROM items WHERE id = ? AND is_used = 0", (item_id,))
+        await db.commit()
+        return cursor.rowcount > 0
+
+async def get_used_items_count_by_subcategory(subcategory_id: int) -> int:
+    """Hitung item terpakai dalam satu subkategori (untuk info saja)."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute(
+            "SELECT COUNT(*) FROM items WHERE subcategory_id = ? AND is_used = 1",
+            (subcategory_id,)
+        )
+        row = await cursor.fetchone()
+        return row[0] if row else 0
+        
 #page 4
 async def get_subcategory_name(subcategory_id: int):
     async with aiosqlite.connect(DB_PATH) as db:
@@ -148,11 +221,6 @@ async def update_order_payment_proof(order_id: str, file_id: str):
         await db.execute('UPDATE orders SET payment_proof_file_id = ? WHERE id = ?', (file_id, order_id))
         await db.commit()
 
-async def get_order_by_id(order_id: str):
-    async with aiosqlite.connect(DB_PATH) as db:
-        async with db.execute('SELECT * FROM orders WHERE id = ?', (order_id,)) as cursor:
-            return await cursor.fetchone()
-
 async def get_order_details(subcategory_id: int):
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute('''
@@ -162,6 +230,11 @@ async def get_order_details(subcategory_id: int):
         ''', (subcategory_id,)) as cursor:
             row = await cursor.fetchone()
             return row if row else (None, None)
+
+async def get_order_by_id(order_id):
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("SELECT id, user_id, item_id, quantity, total_price, three_digits, payment_proof_file_id, status FROM orders WHERE id = ?", (order_id,))
+        return await cursor.fetchone()
 
 # s1
 # Tambahkan di source/database/queries.py
@@ -219,24 +292,42 @@ async def export_all_items_data():
             return await cursor.fetchall()
 
 # s5
-async def get_orders_by_status(status: Optional[str], limit: int, offset: int):
+async def get_product_variant(variant_id: int):
+    """Mengambil data subkategori beserta nama kategori induknya."""
     async with aiosqlite.connect(DB_PATH) as db:
-        if status:
-            query = 'SELECT * FROM orders WHERE status = ? ORDER BY created_at DESC LIMIT ? OFFSET ?'
-            params = (status, limit, offset)
-        else:
-            query = 'SELECT * FROM orders ORDER BY created_at DESC LIMIT ? OFFSET ?'
-            params = (limit, offset)
-        async with db.execute(query, params) as cursor:
-            orders = await cursor.fetchall()
-        # Hitung total
-        if status:
-            async with db.execute('SELECT COUNT(*) FROM orders WHERE status = ?', (status,)) as cursor:
-                total = (await cursor.fetchone())[0]
-        else:
-            async with db.execute('SELECT COUNT(*) FROM orders') as cursor:
-                total = (await cursor.fetchone())[0]
-        return orders, total
+        async with db.execute('''
+            SELECT s.id, c.name, s.name, s.price
+            FROM subcategories s
+            JOIN categories c ON s.category_id = c.id
+            WHERE s.id = ?
+        ''', (variant_id,)) as cursor:
+            return await cursor.fetchone()
+            
+async def get_item_subcategory(item_id: int) -> int:
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("SELECT subcategory_id FROM items WHERE id = ?", (item_id,))
+        row = await cursor.fetchone()
+        return row[0] if row else None
+
+async def get_orders_by_status(status, limit=10, offset=0):
+    async with aiosqlite.connect(DB_PATH) as db:
+        base = "SELECT id, user_id, item_id, quantity, total_price, three_digits, payment_proof_file_id, status FROM orders"
+        count = "SELECT COUNT(*) FROM orders"
+        params = []
+        if status is not None:
+            where = " WHERE status = ?"
+            base += where
+            count += where
+            params.append(status)
+        # ambil total dulu
+        cursor_count = await db.execute(count, params)
+        total = (await cursor_count.fetchone())[0]
+
+        base += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+        cursor = await db.execute(base, params)
+        orders = await cursor.fetchall()
+        return orders, total   # pastikan total adalah int, bukan ...
 
 # s6 
 async def get_total_revenue():
@@ -314,3 +405,58 @@ async def delete_broadcast_job(job_id: int):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute('DELETE FROM broadcast_jobs WHERE id = ?', (job_id,))
         await db.commit()
+
+# ========== BROADCAST TARGETS ==========
+async def get_all_user_ids() -> list:
+    """Ambil semua user_id dari tabel users."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("SELECT user_id FROM users")
+        rows = await cursor.fetchall()
+        return [row[0] for row in rows]
+
+
+async def get_buyer_user_ids() -> list:
+    """Ambil user_id yang memiliki minimal 1 order dengan status 'approved'."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute(
+            "SELECT DISTINCT user_id FROM orders WHERE status = 'approved'"
+        )
+        rows = await cursor.fetchall()
+        return [row[0] for row in rows]
+
+
+async def get_nonbuyer_user_ids() -> list:
+    """Ambil user_id yang belum pernah memiliki pesanan approved."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute(
+            """
+            SELECT user_id FROM users
+            WHERE user_id NOT IN (
+                SELECT DISTINCT user_id FROM orders WHERE status = 'approved'
+            )
+            """
+        )
+        rows = await cursor.fetchall()
+        return [row[0] for row in rows]
+
+#s8
+
+async def set_config(key: str, value: str):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)', (key, value))
+        await db.commit()
+
+async def get_used_items_count() -> int:
+    """Hitung jumlah item yang sudah terpakai (is_used = 1)"""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("SELECT COUNT(*) FROM items WHERE is_used = 1")
+        row = await cursor.fetchone()
+        return row[0] if row else 0
+
+async def delete_all_used_items() -> int:
+    """Hapus semua item yang sudah terpakai (is_used = 1). Return jumlah yang dihapus."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("DELETE FROM items WHERE is_used = 1")
+        await db.commit()
+        return cursor.rowcount
+

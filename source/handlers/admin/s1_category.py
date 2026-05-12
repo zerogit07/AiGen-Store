@@ -19,7 +19,7 @@ async def list_categories(callback: CallbackQuery, page: int = 1):
     categories, total = await get_all_categories(ITEMS_PER_PAGE, offset)
     total_pages = (total + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE
     if not categories:
-        text = "📭 *Daftar Kategori*\nBelum ada kategori."
+        text = "📭 *Daftar Kategori Produk*\nBelum ada kategori."
         keyboard = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="➕ Tambah Kategori", callback_data="add_category")],
             [InlineKeyboardButton(text="« Kembali", callback_data="admin_back")]
@@ -28,7 +28,7 @@ async def list_categories(callback: CallbackQuery, page: int = 1):
         await callback.answer()
         return
 
-    text = f"📦 *Daftar Kategori (Halaman {page}/{total_pages})*\n\n"
+    text = f"📦 *Daftar Kategori Profuk (Hal {page}/{total_pages})*\n\n"
     row_angka = []
     for i in range(offset + 1, offset + len(categories) + 1):
         row_angka.append(InlineKeyboardButton(text=pad_center(str(i), BUTTON_WIDTH), callback_data=f"admin_cat_{i}"))
