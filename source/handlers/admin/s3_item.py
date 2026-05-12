@@ -26,8 +26,13 @@ class ItemState(StatesGroup):
     waiting_edit_code = State()
     waiting_delete_confirm = State()
 
+# ── Stok tersedia (fungsi bantu) ──
+async def get_available_count(subcategory_id: int) -> int:
+    """Hanya mengembalikan jumlah stok tersedia (is_used=0)."""
+    items, total = await get_available_items_by_subcategory(subcategory_id, limit=1, offset=0)
+    return total  # fungsi get_available_items_by_subcategory sudah mengembalikan (list, total)
 
-# ── Helper Keyboard ────────────────────────────────────────────
+# ── Keyboard ──
 def action_menu_keyboard():
     return InlineKeyboardMarkup(inline_keyboard=[
         [
@@ -48,9 +53,7 @@ def action_menu_keyboard():
 def item_list_keyboard(items, page, total_pages, offset, subcategory_id):
     buttons = []
     for i, (item_id, code) in enumerate(items, start=offset+1):
-        buttons.append(
-            InlineKeyboardButton(text=pad_center(str(i), BUTTON_WIDTH), callback_data=f"itemselect_{item_id}")
-        )
+        buttons.append(InlineKeyboardButton(text=pad_center(str(i), BUTTON_WIDTH), callback_data=f"itemselect_{item_id}"))
     rows = [buttons[i:i+BUTTON_COLS] for i in range(0, len(buttons), BUTTON_COLS)]
     nav = []
     if page > 1:
@@ -62,8 +65,7 @@ def item_list_keyboard(items, page, total_pages, offset, subcategory_id):
     rows.append([InlineKeyboardButton(text="« Kembali", callback_data="item_back_to_menu")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
-
-# ── Entry: Pilih Kategori ──────────────────────────────────────
+# ── Entry: Pilih Kategori ──
 @router.callback_query(F.data == "admin_item")
 async def item_start(callback: CallbackQuery):
     await show_categories_for_item(callback, page=1)
@@ -105,8 +107,7 @@ async def item_cat_selected(callback: CallbackQuery, state: FSMContext):
     await state.update_data(selected_category_id=cat_id)
     await show_subcategories_for_item(callback, state, cat_id, page=1)
 
-
-# ── Pilih Subkategori ──────────────────────────────────────────
+# ── Pilih Subkategori (tampil stok tersedia) ──
 async def show_subcategories_for_item(callback: CallbackQuery, state: FSMContext, cat_id: int, page: int):
     offset = (page-1) * ITEMS_PER_PAGE
     subs, total = await get_subcategories_by_category(cat_id, ITEMS_PER_PAGE, offset)
@@ -118,10 +119,11 @@ async def show_subcategories_for_item(callback: CallbackQuery, state: FSMContext
         return
     total_pages = (total + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE
     cat_name = await get_category_name(cat_id)
+    await state.update_data(selected_category_name=cat_name)  # simpan untuk menu aksi
     text = f"📂 *{cat_name}* (Halaman {page}/{total_pages})\n\n"
     for i, (sub_id, name, price) in enumerate(subs, start=offset+1):
-        used = await get_used_items_count_by_subcategory(sub_id)
-        text += f"{i}. {name} - Rp{format_rupiah(price)} ({used} terpakai)\n"
+        available_count = await get_available_count(sub_id)
+        text += f"{i}. {name} - Rp{format_rupiah(price)} (Stok: {available_count})\n"
     buttons = []
     for i, (sub_id, _, _) in enumerate(subs, start=offset+1):
         buttons.append(InlineKeyboardButton(text=pad_center(str(i), BUTTON_WIDTH), callback_data=f"itemsub_{sub_id}"))
@@ -136,7 +138,7 @@ async def show_subcategories_for_item(callback: CallbackQuery, state: FSMContext
     rows.append([InlineKeyboardButton(text="« Kembali", callback_data="admin_item")])
     kb = InlineKeyboardMarkup(inline_keyboard=rows)
     await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=kb)
-    await state.update_data(selected_category_name=cat_name)
+    await callback.answer()
 
 @router.callback_query(F.data.startswith("itemsubpage_"))
 async def item_sub_page(callback: CallbackQuery, state: FSMContext):
@@ -151,23 +153,50 @@ async def item_sub_selected(callback: CallbackQuery, state: FSMContext):
     await state.update_data(selected_subcategory_id=sub_id)
     await show_item_menu(callback, state)
 
-
-# ── Menu Aksi ──────────────────────────────────────────────────
+# ── Menu Aksi (tampil informasi lengkap) ──
 async def show_item_menu(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     sub_id = data.get("selected_subcategory_id")
+    cat_name = data.get("selected_category_name", "Kategori")
     sub_name = await get_subcategory_name(sub_id)
-    used = await get_used_items_count_by_subcategory(sub_id)
+
+    available_count = await get_available_count(sub_id)
+    used_count = await get_used_items_count_by_subcategory(sub_id)
+    total_count = available_count + used_count
+
     text = (
-        f"📦 *{sub_name}*\n"
-        f"Item terpakai: {used}\n\n"
-        "*Pilih aksi:*"
+        f"📂 *{cat_name}*\n"
+        f"📦 *{sub_name}*\n\n"
+        f"🟢 Stok Tersedia: {available_count}\n"
+        f"🔴 Stok Terpakai: {used_count}\n"
+        f"📊 Stok Total: {total_count}\n\n"
+        f"*Pilih aksi:*"
     )
     await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=action_menu_keyboard())
     await callback.answer()
 
+# Versi untuk Message (dipanggil setelah impor manual dsb.)
+async def show_item_menu_from_message(message: Message, state: FSMContext):
+    data = await state.get_data()
+    sub_id = data.get("selected_subcategory_id")
+    cat_name = data.get("selected_category_name", "Kategori")
+    sub_name = await get_subcategory_name(sub_id)
 
-# ── EKSPOR CSV ─────────────────────────────────────────────────
+    available_count = await get_available_count(sub_id)
+    used_count = await get_used_items_count_by_subcategory(sub_id)
+    total_count = available_count + used_count
+
+    text = (
+        f"📂 *{cat_name}*\n"
+        f"📦 *{sub_name}*\n\n"
+        f"🟢 Stok Tersedia: {available_count}\n"
+        f"🔴 Stok Terpakai: {used_count}\n"
+        f"📊 Stok Total: {total_count}\n\n"
+        f"*Pilih aksi:*"
+    )
+    await message.answer(text, parse_mode="Markdown", reply_markup=action_menu_keyboard())
+
+# ── EKSPOR CSV ──
 @router.callback_query(F.data == "item_export")
 async def export_items(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
@@ -185,9 +214,9 @@ async def export_items(callback: CallbackQuery, state: FSMContext):
         visible_file_name=f"items_sub{sub_id}.csv",
         caption="✅ Ekspor item tersedia."
     )
-    await callback.answer()
+    await show_item_menu(callback, state)  # kembali ke menu aksi
 
-# ── IMPOR CSV ──────────────────────────────────────────────────
+# ── IMPOR CSV ──
 @router.callback_query(F.data == "item_import")
 async def import_csv_prompt(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer("📥 Kirim file CSV (satu kode per baris).")
@@ -211,18 +240,13 @@ async def receive_csv(message: Message, state: FSMContext):
                 added += 1
     await message.answer(f"✅ {added} item berhasil diimpor.")
     await state.clear()
-    await show_item_menu(message, state)  # di sini message adalah Message, jadi harus pakai message, bukan callback
-    # Perbaikan: panggil dengan callback jika bisa, tapi dari message kita edit pesan sebelumnya
-    # Alternatif: kirim ulang menu di pesan baru
-    # Untuk amannya, kita hapus dulu lalu panggil ulang fungsi menu via message
-    # Di sini aku buat send_menu ulang
+    await show_item_menu_from_message(message, state)  # kembali ke menu aksi
 
 @router.message(ItemState.waiting_csv)
 async def invalid_csv(message: Message):
     await message.answer("❌ Harap kirim file CSV.")
 
-
-# ── TAMBAH MANUAL ──────────────────────────────────────────────
+# ── TAMBAH ITEM MANUAL ──
 @router.callback_query(F.data == "item_manual")
 async def manual_prompt(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer("✏️ Kirim kode item (satu per baris).")
@@ -242,11 +266,9 @@ async def manual_codes_received(message: Message, state: FSMContext):
             added += 1
     await message.answer(f"✅ {added} item berhasil ditambahkan.")
     await state.clear()
-    # Kembali ke menu aksi
-    await message.answer("Kembali ke menu aksi:", reply_markup=action_menu_keyboard())
+    await show_item_menu_from_message(message, state)  # kembali ke menu aksi
 
-
-# ── DAFTAR ITEM ────────────────────────────────────────────────
+# ── DAFTAR ITEM ──
 @router.callback_query(F.data == "item_list")
 async def list_items(callback: CallbackQuery, state: FSMContext):
     await show_item_list(callback, state, page=1)
@@ -286,25 +308,27 @@ async def item_list_page(callback: CallbackQuery, state: FSMContext):
 async def item_back_to_menu(callback: CallbackQuery, state: FSMContext):
     await show_item_menu(callback, state)
 
-
-# ── EDIT ITEM ──────────────────────────────────────────────────
+# ── EDIT ITEM ──
 @router.callback_query(F.data == "item_edit")
-async def edit_item_start(callback: CallbackQuery, state: FSMContext):
-    # Tampilkan daftar item tersedia, lalu admin pilih
+async def edit_item_mode(callback: CallbackQuery, state: FSMContext):
+    await state.update_data(item_action_mode="edit")
+    # Tampilkan daftar item untuk dipilih
     await show_item_list(callback, state, page=1)
-    await callback.answer()
 
-# Setelah admin pilih item di daftar (callback itemselect_{id})
+@router.callback_query(F.data == "item_delete")
+async def delete_item_mode(callback: CallbackQuery, state: FSMContext):
+    await state.update_data(item_action_mode="delete")
+    await show_item_list(callback, state, page=1)
+
 @router.callback_query(F.data.startswith("itemselect_"))
-async def item_selected_for_action(callback: CallbackQuery, state: FSMContext):
+async def item_selected(callback: CallbackQuery, state: FSMContext):
     item_id = int(callback.data.split("_")[1])
     item = await get_item_by_id(item_id)
     if not item or item[3] == 1:
-        await callback.answer("Item tidak valid.", show_alert=True)
+        await callback.answer("Item tidak valid atau sudah terpakai.", show_alert=True)
         return
-    # Tentukan mode: edit atau hapus? Lihat state
     data = await state.get_data()
-    mode = data.get("item_action_mode")  # 'edit' atau 'delete'
+    mode = data.get("item_action_mode")
     if mode == "edit":
         await state.update_data(edit_item_id=item_id, edit_old_code=item[2])
         await callback.message.edit_text(
@@ -327,18 +351,6 @@ async def item_selected_for_action(callback: CallbackQuery, state: FSMContext):
         )
     await callback.answer()
 
-# Sebelum edit, admin klik Edit Item → set mode
-@router.callback_query(F.data == "item_edit")
-async def edit_item_mode(callback: CallbackQuery, state: FSMContext):
-    await state.update_data(item_action_mode="edit")
-    await edit_item_start(callback, state)
-
-@router.callback_query(F.data == "item_delete")
-async def delete_item_mode(callback: CallbackQuery, state: FSMContext):
-    await state.update_data(item_action_mode="delete")
-    await show_item_list(callback, state, page=1)
-    await callback.answer()
-
 @router.message(ItemState.waiting_edit_code, F.text)
 async def receive_new_code(message: Message, state: FSMContext):
     new_code = message.text.strip()
@@ -357,35 +369,9 @@ async def receive_new_code(message: Message, state: FSMContext):
         return
     await message.answer("✅ Kode berhasil diubah.")
     await state.clear()
-    # Kembali ke daftar item
-    await show_item_list_via_message(message, state, page=1)
+    # Kembali ke menu aksi
+    await show_item_menu_from_message(message, state)
 
-async def show_item_list_via_message(message: Message, state: FSMContext, page: int):
-    """Helper untuk menampilkan daftar item dari Message (setelah edit/hapus)."""
-    data = await state.get_data()
-    sub_id = data.get("selected_subcategory_id")
-    sub_name = await get_subcategory_name(sub_id)
-    offset = (page-1) * ITEMS_PER_PAGE
-    items, total = await get_available_items_by_subcategory(sub_id, ITEMS_PER_PAGE, offset)
-    if not items:
-        await message.answer(
-            f"📋 *{sub_name}* - Daftar Item\n\n❌ Tidak ada item tersedia.",
-            parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="« Kembali", callback_data="item_back_to_menu")]
-            ])
-        )
-        return
-    total_pages = (total + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE
-    text = f"📋 *{sub_name}* (Hal {page}/{total_pages})\n\n"
-    for i, (item_id, code) in enumerate(items, start=offset+1):
-        text += f"{i}. {code}\n"
-    kb = item_list_keyboard(items, page, total_pages, offset, sub_id)
-    await message.answer(text, parse_mode="Markdown", reply_markup=kb)
-    await state.update_data(item_list_page=page)
-
-
-# ── HAPUS ITEM ─────────────────────────────────────────────────
 @router.callback_query(F.data == "itemdelete_confirm")
 async def confirm_delete_item(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
@@ -399,4 +385,5 @@ async def confirm_delete_item(callback: CallbackQuery, state: FSMContext):
     else:
         await callback.answer("Gagal menghapus item.", show_alert=True)
     await state.update_data(item_action_mode=None)
-    await show_item_list(callback, state, page=1)
+    # Kembali ke menu aksi
+    await show_item_menu(callback, state)

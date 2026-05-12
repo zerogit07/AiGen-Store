@@ -269,6 +269,7 @@ async def get_auto_delete_days() -> int:
             row = await cursor.fetchone()
             return int(row[0]) if row else 7
 
+
 # s4
 async def get_category_by_name(name: str):
     async with aiosqlite.connect(DB_PATH) as db:
