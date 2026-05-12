@@ -96,9 +96,9 @@ async def create_order(order_id: str, user_id: int, item_id: int, quantity: int,
         ''', (order_id, user_id, item_id, quantity, total_price, three_digits))
         await db.commit()
 
-async def update_order_status(order_id: str, status: str):
+async def update_order_status(order_id: str, new_status: str):
     async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute('UPDATE orders SET status = ? WHERE id = ?', (status, order_id))
+        await db.execute("UPDATE orders SET status = ? WHERE id = ?", (new_status, order_id))
         await db.commit()
 
 async def add_user(user_id: int, username: str = None, first_name: str = None):
@@ -310,16 +310,24 @@ async def get_item_subcategory(item_id: int) -> int:
         return row[0] if row else None
 
 async def get_orders_by_status(status, limit=10, offset=0):
-    query = "SELECT id, user_id, item_id, quantity, total_price, three_digits, payment_proof_file_id, status FROM orders"
-    params = []
-    if status is not None:
-        query += " WHERE status = ?"
-        params.append(status)
-    query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
-    params.extend([limit, offset])
     async with aiosqlite.connect(DB_PATH) as db:
-        cursor = await db.execute(query, params)
-        return await cursor.fetchall(), ... # total count
+        base = "SELECT id, user_id, item_id, quantity, total_price, three_digits, payment_proof_file_id, status FROM orders"
+        count = "SELECT COUNT(*) FROM orders"
+        params = []
+        if status is not None:
+            where = " WHERE status = ?"
+            base += where
+            count += where
+            params.append(status)
+        # ambil total dulu
+        cursor_count = await db.execute(count, params)
+        total = (await cursor_count.fetchone())[0]
+
+        base += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+        cursor = await db.execute(base, params)
+        orders = await cursor.fetchall()
+        return orders, total   # pastikan total adalah int, bukan ...
 
 # s6 
 async def get_total_revenue():
@@ -451,3 +459,4 @@ async def delete_all_used_items() -> int:
         cursor = await db.execute("DELETE FROM items WHERE is_used = 1")
         await db.commit()
         return cursor.rowcount
+
