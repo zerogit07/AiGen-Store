@@ -11,7 +11,7 @@ from source.handlers.user.p3_input import router as p3_router
 from source.handlers.user.p4_qris import router as p4_router
 from source.handlers.user.p5_confirm import router as p5_router
 
-# Handlers Admin - SEMENTARA DINONAKTIFKAN (comment)
+# Handlers Admin
 from source.handlers.admin.admin import router as admin_router
 from source.handlers.admin.s1_category import router as category_router
 from source.handlers.admin.s2_subcategory import router as subcategory_router

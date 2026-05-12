@@ -93,11 +93,16 @@ async def show_categories(target, state: FSMContext, page: int = 1):
     await state.update_data(has_banner=data.get('has_banner', False))
     await state.set_state(UserState.selecting_category)
 
+
 @router.callback_query(UserState.selecting_category, F.data.startswith("cat_"))
 async def category_selected(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
+    # ── Daftarkan user jika belum ada ──
+    user = callback.from_user
+    await add_user(user.id, user.username, user.first_name)
+
     category_id = int(callback.data.split("_")[1])
     await state.update_data(selected_category_id=category_id)
     from source.handlers.user.p2_subcategory import show_subcategories_by_edit
     await show_subcategories_by_edit(callback, state, category_id, page=1)
-    await state.set_state(UserState.selecting_subcategory)   # ← tambahin ini
+    await state.set_state(UserState.selecting_subcategory)

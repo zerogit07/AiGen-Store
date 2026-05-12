@@ -336,6 +336,60 @@ async def get_orders_by_status(status, limit=10, offset=0):
         cursor = await db.execute(base, params)
         orders = await cursor.fetchall()
         return orders, total   # pastikan total adalah int, bukan ...
+# ── BULK OPERATIONS & HISTORY DELETE ──────────────────────────────
+
+async def get_order_ids_by_status(status: str, limit: int, offset: int) -> list[str]:
+    """Ambil list order_id untuk bulk action (per halaman)"""
+    async with aiosqlite.connect(DB_PATH) as db:
+        if status is None:  # Semua status
+            async with db.execute(
+                "SELECT id FROM orders ORDER BY created_at DESC LIMIT ? OFFSET ?",
+                (limit, offset)
+            ) as cursor:
+                rows = await cursor.fetchall()
+        else:
+            async with db.execute(
+                "SELECT id FROM orders WHERE status = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
+                (status, limit, offset)
+            ) as cursor:
+                rows = await cursor.fetchall()
+        return [row[0] for row in rows]
+
+
+async def bulk_update_orders_status(order_ids: list[str], new_status: str) -> dict:
+    """Update status multiple orders. Return {success: int, failed: int}"""
+    success, failed = 0, 0
+    async with aiosqlite.connect(DB_PATH) as db:
+        for order_id in order_ids:
+            try:
+                # Hanya update jika masih pending (safety check)
+                await db.execute(
+                    "UPDATE orders SET status = ? WHERE id = ? AND status = 'pending'",
+                    (new_status, order_id)
+                )
+                success += 1
+            except Exception:
+                failed += 1
+        await db.commit()
+    return {"success": success, "failed": failed}
+
+
+async def hard_delete_orders_by_status(status: str, limit: int, offset: int) -> int:
+    """Hard delete orders by status (per halaman). Return jumlah terhapus."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        if status is None:  # Semua status
+            cursor = await db.execute(
+                "DELETE FROM orders WHERE id IN (SELECT id FROM orders ORDER BY created_at DESC LIMIT ? OFFSET ?)",
+                (limit, offset)
+            )
+        else:
+            cursor = await db.execute(
+                "DELETE FROM orders WHERE status = ? AND id IN (SELECT id FROM orders WHERE status = ? ORDER BY created_at DESC LIMIT ? OFFSET ?)",
+                (status, status, limit, offset)
+            )
+        deleted = cursor.rowcount
+        await db.commit()
+        return deleted
 
 # s6 
 async def get_total_revenue():
