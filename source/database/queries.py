@@ -101,14 +101,14 @@ async def update_order_status(order_id: str, new_status: str):
         await db.execute("UPDATE orders SET status = ? WHERE id = ?", (new_status, order_id))
         await db.commit()
 
-async def add_user(user_id: int, username: str = None, first_name: str = None):
+async def add_user(user_id: int, username: str, first_name: str):
     async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute('''
-            INSERT OR REPLACE INTO users (user_id, username, first_name, last_seen)
-            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-        ''', (user_id, username, first_name))
+        await db.execute(
+            "INSERT OR IGNORE INTO users (user_id, username, first_name) VALUES (?, ?, ?)",
+            (user_id, username, first_name)
+        )
         await db.commit()
-
+        
 async def get_stock_for_subcategory(subcategory_id: int) -> int:
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute('SELECT COUNT(*) FROM items WHERE subcategory_id = ? AND is_used = 0', (subcategory_id,)) as cursor:
@@ -214,7 +214,8 @@ async def get_config(key: str):
         async with db.execute('SELECT value FROM config WHERE key = ?', (key,)) as cursor:
             row = await cursor.fetchone()
             return row[0] if row else None
-            
+
+
 #page 5
 async def update_order_payment_proof(order_id: str, file_id: str):
     async with aiosqlite.connect(DB_PATH) as db:
@@ -290,6 +291,13 @@ async def export_all_items_data():
         '''
         async with db.execute(query) as cursor:
             return await cursor.fetchall()
+
+async def is_user_registered(user_id: int) -> bool:
+    """True jika user_id sudah ada di tabel users."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("SELECT 1 FROM users WHERE user_id = ?", (user_id,))
+        row = await cursor.fetchone()
+        return row is not None
 
 # s5
 async def get_product_variant(variant_id: int):

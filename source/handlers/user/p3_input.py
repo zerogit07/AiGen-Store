@@ -108,7 +108,7 @@ async def go_to_confirm(callback: CallbackQuery, state: FSMContext):
 
     # Panggil P4 – langsung fungsi send_qris_message dari p4_confirm
     from source.handlers.user.p4_qris import send_qris_message
-    await send_qris_message(callback.message, state)
+    await send_qris_message(callback.message, state, user_id=callback.from_user.id)
     await state.set_state(UserState.confirming)   # pastikan state berubah
 
 # ===== TOMBOL KEMBALI =====
