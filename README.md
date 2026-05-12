@@ -122,18 +122,6 @@ AiGen-Store/
 
 ---
 
-🧪 Unit Test
-
-Jalankan semua tes:
-
-```bash
-python -m pytest tests/ -v
-```
-
-Tes mencakup handler s5_pesanan.py, s4_data.py, dan lainnya. Database asli tidak tersentuh – semua fungsi di‑mock.
-
----
-
 📜 Lisensi
 
 MIT – bebas digunakan, dimodifikasi, dan disebarluaskan.
