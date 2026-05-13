@@ -8,6 +8,12 @@ from source.database.queries import (
     get_order_details,
     get_pending_order_ids,
     delete_orders_by_status,
+    get_incoming_orders,
+    get_order_by_id,
+    get_available_item,
+    mark_item_used,
+    update_order_status,
+    get_item_subcategory,
 )
 from source.utils.helpers import format_rupiah
 from source.config import BOT_TOKEN
@@ -17,13 +23,16 @@ bot = Bot(token=BOT_TOKEN)
 
 ITEMS_PER_PAGE = 10
 
+
 # ── Keyboard ──────────────────────────────────
 def main_menu_kb():
     return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📥 Pesanan Masuk", callback_data="orders_incoming")],
         [InlineKeyboardButton(text="📦 Pesanan Pending", callback_data="orders_pending")],
         [InlineKeyboardButton(text="📜 Riwayat Pesanan", callback_data="orders_history")],
         [InlineKeyboardButton(text="« Kembali ke Panel", callback_data="admin_back")]
     ])
+
 
 def history_filter_kb():
     return InlineKeyboardMarkup(inline_keyboard=[
@@ -33,16 +42,251 @@ def history_filter_kb():
         [InlineKeyboardButton(text="« Kembali", callback_data="admin_orders")]
     ])
 
+
 # ── Menu Utama ───────────────────────────────
 @router.callback_query(F.data == "admin_orders")
 async def orders_main(callback: CallbackQuery):
-    await callback.message.edit_text("🛒 *Manajemen Pesanan*\n\nPilih menu:", parse_mode="Markdown", reply_markup=main_menu_kb())
+    await callback.message.edit_text(
+        "🛒 *Manajemen Pesanan*\n\nPilih menu:",
+        parse_mode="Markdown",
+        reply_markup=main_menu_kb()
+    )
     await callback.answer()
+
+
+# ═══════════════ PESANAN MASUK ═══════════════
+@router.callback_query(F.data == "orders_incoming")
+async def incoming_start(callback: CallbackQuery, state: FSMContext):
+    await show_incoming_page(callback, 1, state)
+
+
+async def show_incoming_page(callback: CallbackQuery, page: int, state: FSMContext):
+    offset = (page - 1) * ITEMS_PER_PAGE
+    orders, total = await get_incoming_orders(limit=ITEMS_PER_PAGE, offset=offset)
+    total_pages = max((total + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE, 1)
+
+    if not orders:
+        await callback.message.edit_text(
+            "📥 *Pesanan Masuk*\n\nTidak ada pesanan yang perlu diproses.",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="« Kembali", callback_data="admin_orders")]
+            ])
+        )
+        return
+
+    text = f"📥 *Pesanan Masuk* (Hal {page}/{total_pages})\n\n"
+    rows = []
+    for order in orders:
+        order_id, user_id, item_id, qty, total_price, three_digits, payment_proof, status = order
+        sub_name, cat_name = await get_order_details(item_id)
+        text += (
+            f"🔹 `{order_id}` | User: `{user_id}`\n"
+            f"   {cat_name} → {sub_name} (x{qty})\n"
+            f"   Total: Rp{format_rupiah(total_price)}\n\n"
+        )
+        rows.append([
+            InlineKeyboardButton(text="✅", callback_data=f"approve_{order_id}"),
+            InlineKeyboardButton(text="❌", callback_data=f"reject_{order_id}"),
+            InlineKeyboardButton(text="📷", callback_data=f"view_proof_{order_id}")
+        ])
+
+    # Navigasi halaman
+    nav = []
+    if page > 1:
+        nav.append(InlineKeyboardButton(text="◀", callback_data=f"incoming_page_{page-1}"))
+    if page < total_pages:
+        nav.append(InlineKeyboardButton(text="▶", callback_data=f"incoming_page_{page+1}"))
+    if nav:
+        rows.append(nav)
+
+    # Bulk action + kembali
+    rows.append([
+        InlineKeyboardButton(text="✅ Setujui Semua", callback_data="approve_all_incoming"),
+        InlineKeyboardButton(text="❌ Tolak Semua", callback_data="reject_all_incoming")
+    ])
+    rows.append([InlineKeyboardButton(text="« Kembali", callback_data="admin_orders")])
+
+    kb = InlineKeyboardMarkup(inline_keyboard=rows)
+    await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=kb)
+    await state.update_data(incoming_page=page)
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("incoming_page_"))
+async def incoming_page_nav(callback: CallbackQuery, state: FSMContext):
+    page = int(callback.data.split("_")[2])
+    await show_incoming_page(callback, page, state)
+
+
+# ── Bulk Approve Incoming ────────────────────
+@router.callback_query(F.data == "approve_all_incoming")
+async def approve_all_incoming_prompt(callback: CallbackQuery):
+    _, total = await get_incoming_orders(limit=1, offset=0)
+    if total == 0:
+        await callback.answer("Tidak ada pesanan.", show_alert=True)
+        return
+    await callback.message.edit_text(
+        f"⚠️ Setujui **semua** ({total} pesanan)?",
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="✅ Ya", callback_data="confirm_approve_all_incoming")],
+            [InlineKeyboardButton(text="❌ Batal", callback_data="orders_incoming")]
+        ])
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "confirm_approve_all_incoming")
+async def process_approve_all_incoming(callback: CallbackQuery):
+    orders, _ = await get_incoming_orders(limit=1000, offset=0)
+    success, failed = 0, 0
+    for order in orders:
+        order_id = order[0]
+        order = await get_order_by_id(order_id)
+        if not order or order[7] != 'pending':
+            continue
+        sub_id = await get_item_subcategory(order[2])
+        qty = order[3]
+        item_ids, codes = [], []
+        for _ in range(qty):
+            item = await get_available_item(sub_id, 1)  # ambil satu per satu
+            if not item:
+                break
+            item_ids.append(item[0][0])
+            codes.append(item[0][1])
+        if len(codes) < qty:
+            failed += 1
+            continue
+        for item_id in item_ids:
+            await mark_item_used(item_id, order_id)
+        await update_order_status(order_id, 'approved')
+        try:
+            codes_text = "\n".join(f"`{c}`" for c in codes)
+            await bot.send_message(order[1], f"✅ Pesanan {order_id} disetujui!\nKode Anda:\n{codes_text}")
+        except Exception:
+            pass
+        success += 1
+    await callback.message.edit_text(
+        f"✅ Bulk approve selesai.\nBerhasil: {success}\nGagal: {failed}",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="« Kembali", callback_data="orders_incoming")]
+        ])
+    )
+    await callback.answer()
+
+
+# ── Bulk Reject Incoming ─────────────────────
+@router.callback_query(F.data == "reject_all_incoming")
+async def reject_all_incoming_prompt(callback: CallbackQuery):
+    _, total = await get_incoming_orders(limit=1, offset=0)
+    if total == 0:
+        await callback.answer("Tidak ada pesanan.", show_alert=True)
+        return
+    await callback.message.edit_text(
+        f"⚠️ Tolak **semua** ({total} pesanan)?",
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="✅ Ya", callback_data="confirm_reject_all_incoming")],
+            [InlineKeyboardButton(text="❌ Batal", callback_data="orders_incoming")]
+        ])
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "confirm_reject_all_incoming")
+async def process_reject_all_incoming(callback: CallbackQuery):
+    orders, _ = await get_incoming_orders(limit=1000, offset=0)
+    success, failed = 0, 0
+    for order in orders:
+        order_id = order[0]
+        order = await get_order_by_id(order_id)
+        if not order or order[7] != 'pending':
+            continue
+        await update_order_status(order_id, 'rejected')
+        try:
+            await bot.send_message(order[1], f"❌ Pesanan {order_id} ditolak.")
+        except Exception:
+            pass
+        success += 1
+    await callback.message.edit_text(
+        f"✅ Bulk reject selesai.\nBerhasil: {success}\nGagal: {failed}",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="« Kembali", callback_data="orders_incoming")]
+        ])
+    )
+    await callback.answer()
+
+
+# ── Handler Aksi Per Order (HANYA untuk pesan teks) ──
+@router.callback_query(F.data.startswith("approve_"), ~F.message.photo)
+async def approve_one(callback: CallbackQuery):
+    order_id = callback.data.split("_")[1]
+    order = await get_order_by_id(order_id)
+    if not order or order[7] != 'pending':
+        await callback.answer("Pesanan tidak valid.", show_alert=True)
+        return
+
+    sub_id = await get_item_subcategory(order[2])
+    qty = order[3]
+    item_ids, codes = [], []
+    for _ in range(qty):
+        item = await get_available_item(sub_id, 1)
+        if not item:
+            await callback.answer(f"Stok tidak mencukupi (butuh {qty}, baru {len(codes)}).", show_alert=True)
+            return
+        item_ids.append(item[0][0])
+        codes.append(item[0][1])
+
+    for item_id in item_ids:
+        await mark_item_used(item_id, order_id)
+    await update_order_status(order_id, 'approved')
+
+    user_id = order[1]
+    codes_text = "\n".join(f"`{c}`" for c in codes)
+    try:
+        await bot.send_message(user_id, f"✅ Pesanan {order_id} disetujui!\nKode Anda:\n{codes_text}")
+    except Exception:
+        pass
+
+    await callback.message.edit_text(f"✅ Pesanan {order_id} disetujui ({qty} item).")
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("reject_"), ~F.message.photo)
+async def reject_one(callback: CallbackQuery):
+    order_id = callback.data.split("_")[1]
+    order = await get_order_by_id(order_id)
+    if not order or order[7] != 'pending':
+        await callback.answer("Pesanan tidak valid.", show_alert=True)
+        return
+
+    await update_order_status(order_id, 'rejected')
+    try:
+        await bot.send_message(order[1], f"❌ Pesanan {order_id} ditolak.")
+    except Exception:
+        pass
+
+    await callback.message.edit_text(f"❌ Pesanan {order_id} ditolak.")
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("view_proof_"))
+async def view_proof(callback: CallbackQuery):
+    order_id = callback.data.split("_")[2]
+    order = await get_order_by_id(order_id)
+    if not order or not order[6]:
+        await callback.answer("Bukti tidak tersedia.", show_alert=True)
+        return
+    await callback.message.answer_photo(order[6], caption=f"Bukti pembayaran untuk {order_id}")
+    await callback.answer()
+
 
 # ═══════════════ PENDING ═════════════════════
 @router.callback_query(F.data == "orders_pending")
 async def pending_start(callback: CallbackQuery, state: FSMContext):
     await show_pending_page(callback, 1, state)
+
 
 async def show_pending_page(callback: CallbackQuery, page: int, state: FSMContext):
     offset = (page - 1) * ITEMS_PER_PAGE
@@ -86,10 +330,12 @@ async def show_pending_page(callback: CallbackQuery, page: int, state: FSMContex
     await state.update_data(pending_page=page)
     await callback.answer()
 
+
 @router.callback_query(F.data.startswith("pending_page_"))
 async def pending_page_nav(callback: CallbackQuery, state: FSMContext):
     page = int(callback.data.split("_")[2])
     await show_pending_page(callback, page, state)
+
 
 @router.callback_query(F.data == "delete_pending")
 async def delete_pending_prompt(callback: CallbackQuery):
@@ -107,6 +353,7 @@ async def delete_pending_prompt(callback: CallbackQuery):
     )
     await callback.answer()
 
+
 @router.callback_query(F.data == "confirm_delete_pending")
 async def process_delete_pending(callback: CallbackQuery):
     count = await delete_orders_by_status("pending")
@@ -118,18 +365,25 @@ async def process_delete_pending(callback: CallbackQuery):
     )
     await callback.answer()
 
+
 # ═══════════════ RIWAYAT ═════════════════════
 @router.callback_query(F.data == "orders_history")
 async def history_menu(callback: CallbackQuery):
-    await callback.message.edit_text("📜 *Riwayat Pesanan*\n\nPilih filter:", parse_mode="Markdown", reply_markup=history_filter_kb())
+    await callback.message.edit_text(
+        "📜 *Riwayat Pesanan*\n\nPilih filter:",
+        parse_mode="Markdown",
+        reply_markup=history_filter_kb()
+    )
     await callback.answer()
+
 
 @router.callback_query(F.data.startswith("history_"))
 async def history_filter_handler(callback: CallbackQuery, state: FSMContext):
-    filter_val = callback.data.split("_")[1]  # 'all', 'approved', 'rejected'
+    filter_val = callback.data.split("_")[1]
     status = None if filter_val == "all" else filter_val
     await state.update_data(history_status=status)
     await show_history_page(callback, status, 1, state)
+
 
 async def show_history_page(callback: CallbackQuery, status, page: int, state: FSMContext):
     offset = (page - 1) * ITEMS_PER_PAGE
@@ -137,10 +391,13 @@ async def show_history_page(callback: CallbackQuery, status, page: int, state: F
     total_pages = max((total + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE, 1)
 
     if not orders:
-        await callback.message.edit_text("📜 Tidak ada pesanan.", parse_mode="Markdown",
-                                          reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                                              [InlineKeyboardButton(text="« Kembali", callback_data="orders_history")]
-                                          ]))
+        await callback.message.edit_text(
+            "📜 Tidak ada pesanan.",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="« Kembali", callback_data="orders_history")]
+            ])
+        )
         return
 
     text = f"📜 *Riwayat Pesanan* (Hal {page}/{total_pages})\n\n"
@@ -166,6 +423,7 @@ async def show_history_page(callback: CallbackQuery, status, page: int, state: F
     await state.update_data(history_status=status, history_page=page)
     await callback.answer()
 
+
 @router.callback_query(F.data.startswith("histpage_"))
 async def history_page_nav(callback: CallbackQuery, state: FSMContext):
     parts = callback.data.split("_")
@@ -173,10 +431,11 @@ async def history_page_nav(callback: CallbackQuery, state: FSMContext):
     page = int(parts[2])
     await show_history_page(callback, status, page, state)
 
+
 @router.callback_query(F.data == "delete_history")
 async def delete_history_prompt(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
-    status = data.get("history_status")  # None, 'approved', 'rejected'
+    status = data.get("history_status")
     label = status or "semua"
     await callback.message.edit_text(
         f"⚠️ Hapus **{label}** riwayat?",
@@ -187,6 +446,7 @@ async def delete_history_prompt(callback: CallbackQuery, state: FSMContext):
         ])
     )
     await callback.answer()
+
 
 @router.callback_query(F.data.startswith("confirm_delete_history_"))
 async def process_delete_history(callback: CallbackQuery):

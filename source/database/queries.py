@@ -354,6 +354,7 @@ async def get_orders_by_status(status, limit=10, offset=0):
         cursor = await db.execute("SELECT id FROM orders WHERE status = 'pending'")
         rows = await cursor.fetchall()
         return [row[0] for row in rows]
+        
 
 # Tambahkan di source/database/queries.py
 
@@ -377,7 +378,23 @@ async def delete_orders_by_status(status: str = None) -> int:
             cursor = await db.execute("DELETE FROM orders WHERE status = ?", (status,))
         await db.commit()
         return cursor.rowcount
-        
+
+async def get_incoming_orders(limit=10, offset=0):
+    """Ambil pesanan yang sudah upload bukti & status masih pending."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor_count = await db.execute(
+            "SELECT COUNT(*) FROM orders WHERE payment_proof_file_id IS NOT NULL AND status = 'pending'"
+        )
+        total = (await cursor_count.fetchone())[0]
+
+        cursor = await db.execute(
+            "SELECT id, user_id, item_id, quantity, total_price, three_digits, payment_proof_file_id, status FROM orders "
+            "WHERE payment_proof_file_id IS NOT NULL AND status = 'pending' "
+            "ORDER BY created_at DESC LIMIT ? OFFSET ?",
+            (limit, offset)
+        )
+        orders = await cursor.fetchall()
+        return orders, total
 # s6 
 async def get_total_revenue():
     async with aiosqlite.connect(DB_PATH) as db:
