@@ -5,7 +5,7 @@ from aiogram.fsm.context import FSMContext
 from source.states.user_state import UserState
 from source.database.queries import (
     get_subcategory_name, get_category_name_by_subcategory,
-    create_order, get_config, is_user_registered
+    create_order, get_config,
 )
 from source.utils.helpers import format_rupiah, generate_three_digits
 from source.config import BOT_TOKEN, ADMIN_ID
@@ -23,14 +23,7 @@ async def send_qris_message(message, state: FSMContext, user_id: int = None):
     """
     # ── Tentukan user_id dengan prioritas ─────────────────
     if user_id is None:
-        # Fallback, hanya untuk panggilan dari tempat lain (seharusnya tidak dari P3)
         user_id = message.from_user.id
-    # if user_id == ADMIN_ID:
-    #     await message.answer("👑 Admin tidak dapat melakukan pemesanan.")
-    #     return
-    # if not await is_user_registered(user_id):
-    #     await message.answer("⚠️ Silakan ketik /start terlebih dahulu...")
-    #     return
 
     # ── Ambil data dari state ─────────────────────────
     data = await state.get_data()
@@ -84,15 +77,27 @@ async def send_qris_message(message, state: FSMContext, user_id: int = None):
 # ── Handler untuk tombol "Kirim Bukti" ─────────────────
 @router.callback_query(UserState.confirming, F.data.startswith("proof_"))
 async def proof_prompt(callback: CallbackQuery, state: FSMContext):
+
+    # Pengaman admin
+    if callback.from_user.id == ADMIN_ID:
+        await callback.answer(
+            "👑 Admin tidak dapat mengirim bukti pembayaran.",
+            show_alert=True
+        )
+        return
+
     await callback.answer()
+
     order_id = callback.data.split("_")[1]
+
     await state.update_data(waiting_proof_order_id=order_id)
+
     await callback.message.answer(
         "📸 Silakan kirim *foto bukti transfer* (file gambar).",
         parse_mode="Markdown"
     )
-    await state.set_state(UserState.waiting_proof)
 
+    await state.set_state(UserState.waiting_proof)
 
 # ── Handler untuk tombol "Kembali" ─────────────────────
 @router.callback_query(UserState.confirming, F.data == "back_to_quantity_from_qris")

@@ -2,6 +2,7 @@ import aiosqlite
 from source.config import DB_PATH
 from typing import Optional
 
+
 # ========== CATEGORIES ==========
 async def get_all_categories(limit: int = 10, offset: int = 0):
     async with aiosqlite.connect(DB_PATH) as db:
@@ -72,15 +73,22 @@ async def add_item(subcategory_id: int, code: str):
         await db.commit()
         return cur.lastrowid
 
-async def get_available_item(subcategory_id: int):
-    """Cari satu item yang tersedia (is_used=0) di subkategori tertentu."""
+async def get_available_item(subcategory_id: int, qty: int):
+    """Ambil beberapa item tersedia sesuai qty."""
+
     async with aiosqlite.connect(DB_PATH) as db:
         cursor = await db.execute(
-            "SELECT id, code FROM items WHERE subcategory_id = ? AND is_used = 0 LIMIT 1",
-            (subcategory_id,)
+            """
+            SELECT id, code
+            FROM items
+            WHERE subcategory_id = ?
+            AND is_used = 0
+            LIMIT ?
+            """,
+            (subcategory_id, qty)
         )
-        return await cursor.fetchone()
-
+        return await cursor.fetchall()
+        
 async def mark_item_used(item_id: int, order_id: str):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute('UPDATE items SET is_used = 1, order_id = ?, used_at = CURRENT_TIMESTAMP WHERE id = ?', (order_id, item_id))
