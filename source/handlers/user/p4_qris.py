@@ -25,17 +25,12 @@ async def send_qris_message(message, state: FSMContext, user_id: int = None):
     if user_id is None:
         # Fallback, hanya untuk panggilan dari tempat lain (seharusnya tidak dari P3)
         user_id = message.from_user.id
-
-    # ── Pagar keamanan ─────────────────────────────────
-    # 1. Tolak admin
-    if user_id == ADMIN_ID:
-        await message.answer("👑 Admin tidak dapat melakukan pemesanan.")
-        return
-
-    # 2. Tolak user yang belum /start (tidak terdaftar)
-    if not await is_user_registered(user_id):
-        await message.answer("⚠️ Silakan ketik /start terlebih dahulu untuk menggunakan bot.")
-        return
+    # if user_id == ADMIN_ID:
+    #     await message.answer("👑 Admin tidak dapat melakukan pemesanan.")
+    #     return
+    # if not await is_user_registered(user_id):
+    #     await message.answer("⚠️ Silakan ketik /start terlebih dahulu...")
+    #     return
 
     # ── Ambil data dari state ─────────────────────────
     data = await state.get_data()

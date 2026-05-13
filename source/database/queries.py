@@ -73,9 +73,13 @@ async def add_item(subcategory_id: int, code: str):
         return cur.lastrowid
 
 async def get_available_item(subcategory_id: int):
+    """Cari satu item yang tersedia (is_used=0) di subkategori tertentu."""
     async with aiosqlite.connect(DB_PATH) as db:
-        async with db.execute('SELECT id, code FROM items WHERE subcategory_id = ? AND is_used = 0 LIMIT 1', (subcategory_id,)) as cursor:
-            return await cursor.fetchone()
+        cursor = await db.execute(
+            "SELECT id, code FROM items WHERE subcategory_id = ? AND is_used = 0 LIMIT 1",
+            (subcategory_id,)
+        )
+        return await cursor.fetchone()
 
 async def mark_item_used(item_id: int, order_id: str):
     async with aiosqlite.connect(DB_PATH) as db:
@@ -337,61 +341,35 @@ async def get_orders_by_status(status, limit=10, offset=0):
         cursor = await db.execute(base, params)
         orders = await cursor.fetchall()
         return orders, total   # pastikan total adalah int, bukan ...
-# ── BULK OPERATIONS & HISTORY DELETE ──────────────────────────────
-
-async def get_order_ids_by_status(status: str, limit: int, offset: int) -> list[str]:
-    """Ambil list order_id untuk bulk action (per halaman)"""
+# async def get_pending_order_ids() -> list:
     async with aiosqlite.connect(DB_PATH) as db:
-        if status is None:  # Semua status
-            async with db.execute(
-                "SELECT id FROM orders ORDER BY created_at DESC LIMIT ? OFFSET ?",
-                (limit, offset)
-            ) as cursor:
-                rows = await cursor.fetchall()
-        else:
-            async with db.execute(
-                "SELECT id FROM orders WHERE status = ? ORDER BY created_at DESC LIMIT ? OFFSET ?",
-                (status, limit, offset)
-            ) as cursor:
-                rows = await cursor.fetchall()
+        cursor = await db.execute("SELECT id FROM orders WHERE status = 'pending'")
+        rows = await cursor.fetchall()
         return [row[0] for row in rows]
 
+# Tambahkan di source/database/queries.py
 
-async def bulk_update_orders_status(order_ids: list[str], new_status: str) -> dict:
-    """Update status multiple orders. Return {success: int, failed: int}"""
-    success, failed = 0, 0
+async def get_pending_order_ids() -> list:
+    """Mengembalikan daftar order_id yang statusnya 'pending'."""
     async with aiosqlite.connect(DB_PATH) as db:
-        for order_id in order_ids:
-            try:
-                # Hanya update jika masih pending (safety check)
-                await db.execute(
-                    "UPDATE orders SET status = ? WHERE id = ? AND status = 'pending'",
-                    (new_status, order_id)
-                )
-                success += 1
-            except Exception:
-                failed += 1
-        await db.commit()
-    return {"success": success, "failed": failed}
+        cursor = await db.execute("SELECT id FROM orders WHERE status = 'pending'")
+        rows = await cursor.fetchall()
+        return [row[0] for row in rows]
 
-
-async def hard_delete_orders_by_status(status: str, limit: int, offset: int) -> int:
-    """Hard delete orders by status (per halaman). Return jumlah terhapus."""
+async def delete_orders_by_status(status: str = None) -> int:
+    """
+    Menghapus order berdasarkan status.
+    Jika status = None, hapus semua order (untuk history).
+    Return jumlah yang dihapus.
+    """
     async with aiosqlite.connect(DB_PATH) as db:
-        if status is None:  # Semua status
-            cursor = await db.execute(
-                "DELETE FROM orders WHERE id IN (SELECT id FROM orders ORDER BY created_at DESC LIMIT ? OFFSET ?)",
-                (limit, offset)
-            )
+        if status is None:
+            cursor = await db.execute("DELETE FROM orders")
         else:
-            cursor = await db.execute(
-                "DELETE FROM orders WHERE status = ? AND id IN (SELECT id FROM orders WHERE status = ? ORDER BY created_at DESC LIMIT ? OFFSET ?)",
-                (status, status, limit, offset)
-            )
-        deleted = cursor.rowcount
+            cursor = await db.execute("DELETE FROM orders WHERE status = ?", (status,))
         await db.commit()
-        return deleted
-
+        return cursor.rowcount
+        
 # s6 
 async def get_total_revenue():
     async with aiosqlite.connect(DB_PATH) as db:
