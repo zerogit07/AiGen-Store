@@ -45,18 +45,24 @@ async def send_qris_message(message, state: FSMContext, user_id: int = None):
     qris_file_id = await get_config("qris_image_file_id")
 
     caption = (
-        f"📋 *Ringkasan Pesanan*\n"
-        f"Kategori: {cat_name}\n"
-        f"Subkategori: {sub_name}\n"
-        f"Jumlah: {qty}\n"
-        f"Total: Rp{format_rupiah(total)}\n"
-        f"Kode Unik: {three_digits}\n\n"
-        f"Silakan transfer ke rekening berikut:\n"
-        f"**Nominal: Rp{format_rupiah(nominal)}**\n"
-        f"(sudah termasuk kode unik)\n\n"
-        f"Setelah transfer, klik tombol Kirim Bukti."
-    )
+    "🧾 <b>RINGKASAN PESANAN</b>\n"
+    "━━━━━━━━━━━━━━\n"
+    
+    "<pre>"
+    f"📂 Kategori : {cat_name}\n"
+    f"📦 Produk   : {sub_name}\n"
+    f"🛒 Jumlah   : {qty}\n"
+    f"💵 Harga    : Rp{format_rupiah(price)}\n"
+    f"🔑 Kode     : {three_digits}\n"
+    "━━━━━━━━━━━━━━\n"
+    " TOTAL PEMBAYARAN\n"
+    f"   ━ Rp{format_rupiah(nominal)} ━\n"
+    "━━━━━━━━━━━━━━"
+    "</pre>"
 
+    "➡️ Setelah pembayaran selesai,\n"
+    "klik tombol <b>Kirim Bukti</b>👇")
+    
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📸 Kirim Bukti", callback_data=f"proof_{order_id}")],
         [InlineKeyboardButton(text="« Kembali", callback_data="back_to_quantity_from_qris")]
@@ -65,9 +71,9 @@ async def send_qris_message(message, state: FSMContext, user_id: int = None):
     # ── Kirim pesan QRIS ──────────────────────────────
     if qris_file_id and qris_file_id.strip():
         await message.answer_photo(qris_file_id, caption=caption,
-                                   parse_mode="Markdown", reply_markup=keyboard)
+                                   parse_mode="HTML", reply_markup=keyboard)
     else:
-        await message.answer(caption, parse_mode="Markdown", reply_markup=keyboard)
+        await message.answer(caption, parse_mode="HTML", reply_markup=keyboard)
 
     # ── Simpan order_id ke state ──────────────────────
     await state.update_data(order_id=order_id)

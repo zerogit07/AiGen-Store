@@ -45,7 +45,7 @@ async def cmd_start(message: Message, state: FSMContext):
     for i, (_, name) in enumerate(categories, start=offset+1):
         text += f"📂 {i}. {name}\n"
 
-    text += "\n👇 *Silakan pilih tombol angka di bawah*"
+    text += "\n➡️ Pilih tombol angka di bawah👇"
     
     keyboard = get_category_keyboard(categories, page, total_pages, offset)
     if banner:
@@ -74,7 +74,7 @@ async def category_page(callback: CallbackQuery, state: FSMContext):
     for i, (_, name) in enumerate(categories, start=offset+1):
         text += f"📂 {i}. {name}\n"
 
-    text += "\n👇 *Silakan pilih tombol angka di bawah*"
+    text += "\n➡️ Pilih tombol angka di bawah👇"
     
     keyboard = get_category_keyboard(categories, page, total_pages, offset)
     data = await state.get_data()
@@ -101,7 +101,7 @@ async def show_categories(target, state: FSMContext, page: int = 1):
     for i, (_, name) in enumerate(categories, start=offset+1):
         text += f"📂 {i}. {name}\n"
 
-    text += "\n👇 *Silakan pilih tombol angka di bawah*"
+    text += "\n➡️ Pilih tombol angka di bawah👇"
     
     keyboard = get_category_keyboard(categories, page, total_pages, offset)
     if isinstance(target, CallbackQuery):

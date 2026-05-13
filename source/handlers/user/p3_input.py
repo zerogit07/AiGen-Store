@@ -36,20 +36,25 @@ async def send_quantity_message(message: Message, state: FSMContext):
     total = price * qty
 
     text = (
-        f"📂 *Kategori:* {cat_name}\n"
-        f"📦 *Subkategori:* {sub_name}\n"
-        f"💵 *Harga:* Rp{format_rupiah(price)}\n"
-        f"📦 *Stok:* {stock}\n"
-        f"💰 *Total:* Rp{format_rupiah(total)}\n\n"
-        "Atur jumlah dengan tombol di bawah"
-    )
+    "🛒 <b>ATUR JUMLAH PESANAN</b>\n"
+    "━━━━━━━━━━━━━━\n"
 
+    "<pre>"
+    f"📂 Kategori : {cat_name}\n"
+    f"📦 Produk   : {sub_name}\n"
+    f"💵 Harga    : Rp{format_rupiah(price)}\n"
+    f"📦 Stock    : {stock}\n"
+    f"💰 Total    : Rp{format_rupiah(total)}\n"
+    "</pre>"
+    
+    "➡️ Atur jumlah pesanan dengan tombol di bawah👇")
+    
     keyboard = build_product_keyboard(qty)
 
     if has_banner and banner_id:
-        await message.answer_photo(banner_id, caption=text, parse_mode="Markdown", reply_markup=keyboard)
+        await message.answer_photo(banner_id, caption=text, parse_mode="HTML", reply_markup=keyboard)
     else:
-        await message.answer(text, parse_mode="Markdown", reply_markup=keyboard)
+        await message.answer(text, parse_mode="HTML", reply_markup=keyboard)
 
     await state.update_data(qty=qty, total_price=total)
     await state.set_state(UserState.input_quantity)
@@ -82,22 +87,31 @@ async def adjust_quantity(callback: CallbackQuery, state: FSMContext):
     sub_name = data.get('selected_sub_name', 'Produk')
 
     text = (
-        f"📂 *Kategori:* {cat_name}\n"
-        f"📦 *Subkategori:* {sub_name}\n"
-        f"💵 *Harga:* Rp{format_rupiah(price)}\n"
-        f"📦 *Stok:* {stock}\n"
-        f"💰 *Total:* Rp{format_rupiah(total)}\n\n"
-        "Atur jumlah dengan tombol di bawah"
-    )
+    "🛒 <b>ATUR JUMLAH PESANAN</b>\n"
+    "━━━━━━━━━━━━━━\n"
 
+    "<pre>"
+    f"📂 Kategori : {cat_name}\n"
+    f"📦 Produk   : {sub_name}\n"
+    f"💵 Harga    : Rp{format_rupiah(price)}\n"
+    f"📦 Stock    : {stock}\n"
+    f"💰 Total    : Rp{format_rupiah(total)}\n"
+    "</pre>"
+    
+    "👇 Atur jumlah pesanan dengan tombol di bawah")
+    
     keyboard = build_product_keyboard(qty)
-
-    # Update pesan yang sudah ada
+    
     if callback.message.photo:
-        await callback.message.edit_caption(caption=text, parse_mode="Markdown", reply_markup=keyboard)
+        await callback.message.edit_caption(
+            caption=text,
+            parse_mode="HTML",
+            reply_markup=keyboard)
     else:
-        await callback.message.edit_text(text, parse_mode="Markdown", reply_markup=keyboard)
-
+        await callback.message.edit_text(
+            text,
+            parse_mode="HTML",
+            reply_markup=keyboard)
 
 # ===== TOMBOL LANJUTKAN =====
 @router.callback_query(UserState.input_quantity, F.data == "go_confirm")

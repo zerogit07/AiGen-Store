@@ -59,7 +59,7 @@ async def show_subcategories_by_edit(callback: CallbackQuery, state: FSMContext,
         f"└ 💰 Rp{format_rupiah(price)} | 📦 Stock : {stock}\n"
     )
 
-    text += "\n👇 *Silakan pilih tombol angka di bawah*"
+    text += "\n➡️ Pilih tombol angka di bawah👇"
     
     keyboard = get_subcategory_keyboard(subs, page, total_pages, offset, category_id)
 
