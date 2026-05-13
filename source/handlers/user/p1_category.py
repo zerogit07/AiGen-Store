@@ -37,10 +37,16 @@ async def cmd_start(message: Message, state: FSMContext):
         return
     total_pages = (total + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE
     banner = await get_config("banner_image_file_id")
-    text = f"📦 *Daftar Kategori Produk (Hal {page}/{total_pages})*\n\n"
+    
+    text = (
+    f"🛍 *DAFTAR KATEGORI • Page {page}/{total_pages}*\n"
+    f"━━━━━━━━━━━━━━━━━\n")
+
     for i, (_, name) in enumerate(categories, start=offset+1):
-        text += f"{i}. {name}\n"
+        text += f"📂 {i}. {name}\n"
+
     text += "\n👇 *Silakan pilih tombol angka di bawah*"
+    
     keyboard = get_category_keyboard(categories, page, total_pages, offset)
     if banner:
         await message.answer_photo(banner, caption=text, parse_mode="Markdown", reply_markup=keyboard)
@@ -59,10 +65,17 @@ async def category_page(callback: CallbackQuery, state: FSMContext):
         await callback.answer("Halaman kosong.", show_alert=True)
         return
     total_pages = (total + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE
-    text = f"📦 *Daftar Kategori Produk (Hal {page}/{total_pages})*\n\n"
+    
+    text = (
+    f"🛍 *DAFTAR KATEGORI • Page {page}/{total_pages}*\n"
+    f"━━━━━━━━━━━━━━━━━\n")
+
+
     for i, (_, name) in enumerate(categories, start=offset+1):
-        text += f"{i}. {name}\n"
+        text += f"📂 {i}. {name}\n"
+
     text += "\n👇 *Silakan pilih tombol angka di bawah*"
+    
     keyboard = get_category_keyboard(categories, page, total_pages, offset)
     data = await state.get_data()
     if data.get('has_banner'):
@@ -80,10 +93,16 @@ async def show_categories(target, state: FSMContext, page: int = 1):
             await target.message.answer("📭 Belum ada kategori.")
         return
     total_pages = (total + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE
-    text = f"📦 *Daftar Kategori Produk (Hal {page}/{total_pages})*\n\n"
+    
+    text = (
+    f"🛍 *DAFTAR KATEGORI • Page {page}/{total_pages}*\n"
+    f"━━━━━━━━━━━━━━━━━\n")
+
     for i, (_, name) in enumerate(categories, start=offset+1):
-        text += f"{i}. {name}\n"
+        text += f"📂 {i}. {name}\n"
+
     text += "\n👇 *Silakan pilih tombol angka di bawah*"
+    
     keyboard = get_category_keyboard(categories, page, total_pages, offset)
     if isinstance(target, CallbackQuery):
         if data.get('has_banner'):

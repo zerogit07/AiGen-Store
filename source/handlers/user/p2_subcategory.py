@@ -47,12 +47,20 @@ async def show_subcategories_by_edit(callback: CallbackQuery, state: FSMContext,
     has_banner = data.get('has_banner', False)
     cat_name = await get_category_name(category_id)
 
-    text = f"📂 *{cat_name}* (Hal {page}/{total_pages})\n\n"
+    text = (
+        f"📂 *{cat_name}* (Hal {page}/{total_pages}\n"
+        f"━━━━━━━━━━━━━━━━━\n")
+    
     for i, (sub_id, name, price) in enumerate(subs, start=offset+1):
         stock = await get_stock_for_subcategory(sub_id)
-        text += f"{i}. {name} - Rp{format_rupiah(price)} (Stok: {stock})\n"
-    text += "\n👇 *Silakan pilih tombol angka di bawah*"
 
+        text += (
+        f"┌ {i}. {name}\n"
+        f"└ 💰 Rp{format_rupiah(price)} | 📦 Stock : {stock}\n"
+    )
+
+    text += "\n👇 *Silakan pilih tombol angka di bawah*"
+    
     keyboard = get_subcategory_keyboard(subs, page, total_pages, offset, category_id)
 
     if has_banner:
