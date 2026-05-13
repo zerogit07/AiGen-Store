@@ -48,7 +48,7 @@ async def show_subcategories_by_edit(callback: CallbackQuery, state: FSMContext,
     cat_name = await get_category_name(category_id)
 
     text = (
-        f"📂 *{cat_name}* (Hal {page}/{total_pages}\n"
+        f"📂 *{cat_name} • Page {page}/{total_pages}*\n"
         f"━━━━━━━━━━━━━━━━━\n")
     
     for i, (sub_id, name, price) in enumerate(subs, start=offset+1):
