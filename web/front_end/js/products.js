@@ -44,7 +44,9 @@
             <div class="summary-grid">
                 ${items.map(i => `
                     <div class="summary-card">
-                        <div class="summary-label">${i.sub} ${i.label}</div>
+                        <div class="summary-label">
+                            ${i.sub}<br>${i.label}
+                        </div>
                         <div class="summary-value">${i.value}</div>
                     </div>
                 `).join('')}
@@ -176,17 +178,18 @@
         html += '<button class="btn btn-primary btn-full" onclick="window.showSubcategoryModal(' + catId + ')">➕ Tambah Subkategori</button>';
         subRes.data.forEach(s => {
             html += `
-                <div class="list-row">
-                    <span class="list-row-label">${s.name} (Rp${s.price})</span>
-                    <div class="list-row-actions">
-                        <button class="btn-icon" onclick="window.editSubcategory(${s.id}, ${catId}, '${s.name}', ${s.price_raw})">✏️</button>
-                        <button class="btn-icon" onclick="window.deleteSubcategory(${s.id})">🗑️</button>
-                    </div>
-                </div>`;
+            <div class="list-row">
+                <span class="list-row-label">${s.name} (Rp${s.price})</span>
+                <div class="list-row-actions">
+                    <button class="btn-icon" onclick="window.editSubcategory(${s.id}, ${catId}, '${s.name}', ${s.price_raw})">✏️</button>
+                    <button class="btn-icon" onclick="window.deleteSubcategory(${s.id})">🗑️</button>
+                </div>
+            </div>`;
         });
-        html += paginationControls(page, subRes.total, `(function(p){ renderSubcategories(${catId}, p) })`);
+        html += paginationControls(page, subRes.total, `window.renderSubcategoriesPage`);
+        window.renderSubcategoriesPage = function (p) { renderSubcategories(catId, p); };
         subList.innerHTML = html;
-    }
+    };
 
     window.showSubcategoryModal = function (catId, subId = null, oldName = '', oldPrice = '') {
         const title = subId ? 'Edit Subkategori' : 'Tambah Subkategori';
@@ -310,19 +313,20 @@
         html += '</div>';
         itemRes.data.forEach(item => {
             html += `
-                <div class="list-row">
-                    <span class="list-row-label">${item.code} <small>(${item.is_used ? '🔒 Terpakai' : '🟢 Tersedia'})</small></span>
-                    <div class="list-row-actions">
-                        ${!item.is_used ? `
-                            <button class="btn-icon" onclick="window.editItem(${item.id}, '${item.code}')">✏️</button>
-                            <button class="btn-icon" onclick="window.deleteItem(${item.id})">🗑️</button>
-                        ` : ''}
-                    </div>
-                </div>`;
+            <div class="list-row">
+                <span class="list-row-label">${item.code} <small>(${item.is_used ? '🔒 Terpakai' : '🟢 Tersedia'})</small></span>
+                <div class="list-row-actions">
+                    ${!item.is_used ? `
+                        <button class="btn-icon" onclick="window.editItem(${item.id}, '${item.code}')">✏️</button>
+                        <button class="btn-icon" onclick="window.deleteItem(${item.id})">🗑️</button>
+                    ` : ''}
+                </div>
+            </div>`;
         });
-        html += paginationControls(page, itemRes.total, `(function(p){ renderItems(${subId}, p) })`);
+        html += paginationControls(page, itemRes.total, `window.renderItemsPage`);
+        window.renderItemsPage = function (p) { renderItems(subId, p); };
         itemList.innerHTML = html;
-    }
+    };
 
     window.showItemModal = function (subId, itemId = null, oldCode = '') {
         const title = itemId ? 'Edit Item' : 'Tambah Item';
