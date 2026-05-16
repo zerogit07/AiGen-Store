@@ -99,19 +99,45 @@ async function renderManualDelete() {
         const count = data.count || 0;
 
         let html = '';
+
         if (count > 0) {
-            html += '<div class="card"><div class="card-row"><span class="card-label">Item Terpakai</span><span class="card-value">' + count + '</span></div></div>';
-            html += '<button class="btn-full-danger" onclick="manualDelete()">Hapus</button>';
+            html += `
+                <div class="card">
+                    <div class="card-row">
+                        <span class="card-label">Item Terpakai</span>
+                        <span class="card-value">${count}</span>
+                    </div>
+                </div>
+
+                <div class="manual-delete-wrap">
+                    <button
+                        class="manual-delete-btn"
+                        onclick="manualDelete()">
+                        🗑️ Hapus Semua Item terpakai
+                    </button>
+                </div>
+            `;
         } else {
-            html += '<p>Tidak ada item terpakai saat ini. ✅</p>';
+            html += `
+                <div class="manual-delete-empty">
+                    Tidak ada item terpakai saat ini. ✅
+                </div>
+            `;
         }
-        html += '<div id="manualDeleteResult" style="margin-top:12px;"></div>';
+
+        html += `
+            <div id="manualDeleteResult"
+                 style="margin-top:12px;">
+            </div>
+        `;
+
         content.innerHTML = html;
+
     } catch (e) {
-        content.innerHTML = '<div class="placeholder"><p>❌ Gagal memuat.</p></div>';
+        content.innerHTML =
+            '<div class="placeholder"><p>❌ Gagal memuat.</p></div>';
     }
 }
-
 async function manualDelete() {
     window.showConfirmModal(
         'Yakin hapus semua item terpakai?',
