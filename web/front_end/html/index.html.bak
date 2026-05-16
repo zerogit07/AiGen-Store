@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>AiGen Store - Dashboard Admin</title>
+    <!-- Fondasi -->
+    <link rel="stylesheet" href="/static/css/global.css">
+    <link rel="stylesheet" href="/static/css/home.css">
+    <link rel="stylesheet" href="/static/css/products.css">
+    <link rel="stylesheet" href="/static/css/broadcast.css">
+    <link rel="stylesheet" href="/static/css/settings.css">
+</head>
+<body>
+
+    <!-- ==================== SIDEBAR ==================== -->
+    <aside id="sidebar" class="sidebar">
+        <nav>
+            <ul>
+                <li>
+                    <button class="sidebar-item active" data-page="home" data-tabs="">
+                        <span class="sidebar-icon">🏠</span>
+                        <span class="sidebar-text">Home</span>
+                    </button>
+                </li>
+                <li>
+                    <button class="sidebar-item" data-page="products" data-tabs="kategori,subkategori,item">
+                        <span class="sidebar-icon">📂</span>
+                        <span class="sidebar-text">Produk</span>
+                    </button>
+                </li>
+                <li>
+                    <button class="sidebar-item" data-page="orders" data-tabs="masuk,pending,riwayat">
+                        <span class="sidebar-icon">📦</span>
+                        <span class="sidebar-text">Pesanan</span>
+                    </button>
+                </li>
+                <li>
+                    <button class="sidebar-item" data-page="broadcast" data-tabs="">
+                        <span class="sidebar-icon">📣</span>
+                        <span class="sidebar-text">Broadcast</span>
+                    </button>
+                </li>
+                <li>
+                    <button class="sidebar-item" data-page="settings" data-tabs="banner,qris,autodelete">
+                        <span class="sidebar-icon">⚙️</span>
+                        <span class="sidebar-text">Pengaturan</span>
+                    </button>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- ==================== OVERLAY (untuk menutup sidebar) ==================== -->
+    <div id="overlay" class="overlay"></div>
+
+    <!-- ==================== HEADER ==================== -->
+    <header id="header" class="header">
+        <button id="sidebarToggle" class="header-btn" aria-label="Toggle sidebar">☰</button>
+        <h1 id="pageTitle" class="header-title">Home</h1>
+        <button id="profileBtn" class="header-btn profile-btn" aria-label="Profil">👤</button>
+    </header>
+
+    <!-- ==================== TAB BAR ==================== -->
+    <nav id="tabBar" class="tab-bar">
+        <!-- Tab akan diisi dinamis oleh JavaScript -->
+    </nav>
+
+    <!-- ==================== KONTEN UTAMA ==================== -->
+    <main id="content" class="content">
+        <!-- Konten akan diisi dinamis oleh JavaScript -->
+        <div class="placeholder">
+            <p>🔄 Memuat data...</p>
+        </div>
+    </main>
+
+    <!-- ==================== FOOTER (opsional) ==================== -->
+    <footer id="footer" class="footer">
+        <span>AiGen Store v1.0</span>
+    </footer>
+
+    <!-- ==================== JAVASCRIPT ==================== -->
+    <script src="/static/js/app.js"></script>
+    <script src="/static/js/home.js"></script>
+    <script src="/static/js/orders.js"></script>
+    <script src="/static/js/products.js"></script>
+    <script src="/static/js/broadcast.js"></script>
+    <script src="/static/js/settings.js"></script>
+    <script src="/static/js/profile.js"></script>
+</body>
+</html>

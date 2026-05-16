@@ -3,10 +3,8 @@ from aiogram import Router, F, Bot
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from source.states.user_state import UserState
-from source.database.queries import (
-    get_subcategory_name, get_category_name_by_subcategory,
-    create_order, get_config,
-)
+from source.database.queries import ( get_subcategory_name, get_category_name_by_subcategory,
+    create_order, get_config, get_available_item)
 from source.utils.helpers import format_rupiah, generate_three_digits
 from source.config import BOT_TOKEN, ADMIN_ID
 
@@ -14,13 +12,6 @@ router = Router()
 bot = Bot(token=BOT_TOKEN)
 
 async def send_qris_message(message, state: FSMContext, user_id: int = None):
-    """
-    Kirim pesan QRIS ke user.
-    :param message: Message atau CallbackQuery.message (digunakan untuk reply)
-    :param state: FSMContext
-    :param user_id: (optional) ID user yang melakukan pemesanan. 
-                    Jika tidak diberikan, akan diambil dari message.from_user.id (fallback).
-    """
     # ── Tentukan user_id dengan prioritas ─────────────────
     if user_id is None:
         user_id = message.from_user.id
@@ -31,38 +22,48 @@ async def send_qris_message(message, state: FSMContext, user_id: int = None):
     qty = data.get('quantity', data.get('qty', 1))
     price = data.get('price', 0)
     total = price * qty
+    
+    available_items = await get_available_item(subcategory_id, 1)
+    if not available_items:
+        await message.answer("❌ Stok habis untuk produk ini.")
+        return
+    item_id = available_items[0][0]   # ID item pertama yang tersedia
 
     three_digits = generate_three_digits()
     nominal = total + int(three_digits)
     order_id = str(uuid.uuid4())[:8]
 
     # ── Buat order di database ─────────────────────────
-    await create_order(order_id, user_id, subcategory_id, qty, total, three_digits)
-
-    # ── Informasi produk ──────────────────────────────
+    # ✅ Hanya buat order jika BUKAN admin
+    if user_id != ADMIN_ID:
+        await create_order(order_id, user_id, item_id, qty, total, three_digits)
+    # ── Informasi produk (TANPA LABEL SIMULASI) ───────
     sub_name = await get_subcategory_name(subcategory_id)
     cat_name = await get_category_name_by_subcategory(subcategory_id)
     qris_file_id = await get_config("qris_image_file_id")
 
+    title = "TOTAL PEMBAYARAN".center(38)
+    nominal_text = f"Rp{format_rupiah(nominal)}".center(38)
+    separator_a= "━" * 17
+    separator_b= "━" * 34
+    
     caption = (
     "🧾 <b>RINGKASAN PESANAN</b>\n"
-    "━━━━━━━━━━━━━━\n"
-    
+    f"{separator_a}\n"
     "<pre>"
     f"📂 Kategori : {cat_name}\n"
     f"📦 Produk   : {sub_name}\n"
     f"🛒 Jumlah   : {qty}\n"
     f"💵 Harga    : Rp{format_rupiah(price)}\n"
     f"🔑 Kode     : {three_digits}\n"
-    "━━━━━━━━━━━━━━\n"
-    " TOTAL PEMBAYARAN\n"
-    f"   ━ Rp{format_rupiah(nominal)} ━\n"
-    "━━━━━━━━━━━━━━"
+    f"{separator_b}\n"
+    f"{title}\n"
+    f"{nominal_text}\n"
+    f"{separator_b}\n"
     "</pre>"
-
     "➡️ Setelah pembayaran selesai,\n"
     "klik tombol <b>Kirim Bukti</b>👇")
-    
+
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📸 Kirim Bukti", callback_data=f"proof_{order_id}")],
         [InlineKeyboardButton(text="« Kembali", callback_data="back_to_quantity_from_qris")]
@@ -71,14 +72,13 @@ async def send_qris_message(message, state: FSMContext, user_id: int = None):
     # ── Kirim pesan QRIS ──────────────────────────────
     if qris_file_id and qris_file_id.strip():
         await message.answer_photo(qris_file_id, caption=caption,
-                                   parse_mode="HTML", reply_markup=keyboard)
+    parse_mode="HTML", reply_markup=keyboard)
     else:
         await message.answer(caption, parse_mode="HTML", reply_markup=keyboard)
 
     # ── Simpan order_id ke state ──────────────────────
     await state.update_data(order_id=order_id)
     await state.set_state(UserState.confirming)
-
 
 # ── Handler untuk tombol "Kirim Bukti" ─────────────────
 @router.callback_query(UserState.confirming, F.data.startswith("proof_"))

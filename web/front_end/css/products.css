@@ -1,0 +1,108 @@
+/* Baris daftar estetik */
+.list-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    transition: border var(--transition);
+}
+.list-row:hover { border-color: var(--border-light); }
+.list-row-label { font-weight: 500; }
+.list-row-actions { display: flex; gap: 4px; }
+
+/* Ikon aksi */
+.btn-icon {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.3em;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition);
+}
+.btn-icon:hover { color: var(--text-primary); background: var(--border); }
+
+/* Tombol full-width */
+.btn-full { width: 100%; margin-bottom: 12px; }
+
+/* Baris tombol kecil (Tambah, Impor, Ekspor) */
+.btn-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.btn-row .btn { flex: 1; font-size: 0.85em; padding: 8px 0; }
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+}
+.btn-page {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    border-radius: var(--radius-sm);
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+.btn-page:hover { background: var(--border); }
+
+/* Form select & input (sudah ada di global, tambahan jika perlu) */
+.form-select, .form-input, .form-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    margin-top: 5px;
+    margin-bottom: 10px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.9em;
+    outline: none;
+}
+
+.form-textarea{
+    height:60px;      /* kecilkan tinggi */
+    min-height:50px;
+    resize:vertical;      /* opsional: biar tidak bisa ditarik */
+}
+
+/* ---------- MODAL KONFIRMASI ---------- */
+.confirm-modal {
+    text-align: center;
+}
+.confirm-modal p {
+    margin-bottom: 20px;
+    font-size: 0.95em;
+    color: var(--text-secondary);
+}
+.confirm-modal .modal-actions {
+    display: flex;
+    gap: 10px;
+}
+.confirm-modal .btn-danger {
+    background: var(--red);
+    color: #fff;
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+}
+.confirm-modal .btn-cancel {
+    background: transparent;
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+    flex: 1;
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+}

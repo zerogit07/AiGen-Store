@@ -34,11 +34,13 @@ async def send_quantity_message(message: Message, state: FSMContext):
     stock = data.get('stock', 0)
     qty = data.get('qty', 1)
     total = price * qty
-
+    
+    
+    separator = "━" * 17
     text = (
     "🛒 <b>ATUR JUMLAH PESANAN</b>\n"
-    "━━━━━━━━━━━━━━\n"
-
+    f"{separator}\n"
+    
     "<pre>"
     f"📂 Kategori : {cat_name}\n"
     f"📦 Produk   : {sub_name}\n"

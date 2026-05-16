@@ -4,7 +4,7 @@ from aiogram.fsm.context import FSMContext
 from source.states.user_state import UserState
 from source.database.queries import (
     update_order_payment_proof, get_order_by_id, get_order_details,
-    get_available_item, mark_item_used, update_order_status, is_user_registered
+    get_available_item, mark_item_used, update_order_status, is_user_registered, get_item_subcategory
 )
 from source.utils.helpers import format_rupiah
 from source.config import ADMIN_ID, BOT_TOKEN
@@ -100,7 +100,8 @@ async def approve_order(callback: CallbackQuery):
 
     # Data order
     user_id = order[1]
-    subcategory_id = order[2]
+    item_id_in_order = order[2]           
+    subcategory_id = await get_item_subcategory(item_id_in_order)
     qty = order[3]
 
     # Ambil stok sesuai qty

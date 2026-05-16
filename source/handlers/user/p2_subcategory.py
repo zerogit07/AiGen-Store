@@ -46,11 +46,12 @@ async def show_subcategories_by_edit(callback: CallbackQuery, state: FSMContext,
     data = await state.get_data()
     has_banner = data.get('has_banner', False)
     cat_name = await get_category_name(category_id)
-
+    
+    separator = "━" * 17
+    
     text = (
         f"📂 *{cat_name} • Page {page}/{total_pages}*\n"
-        f"━━━━━━━━━━━━━━━━━\n")
-    
+        f"{separator}\n")
     for i, (sub_id, name, price) in enumerate(subs, start=offset+1):
         stock = await get_stock_for_subcategory(sub_id)
 

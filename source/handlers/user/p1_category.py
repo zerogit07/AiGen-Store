@@ -38,9 +38,10 @@ async def cmd_start(message: Message, state: FSMContext):
     total_pages = (total + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE
     banner = await get_config("banner_image_file_id")
     
+    separator = "━" * 17
     text = (
     f"🛍 *DAFTAR KATEGORI • Page {page}/{total_pages}*\n"
-    f"━━━━━━━━━━━━━━━━━\n")
+    f"{separator}\n")
 
     for i, (_, name) in enumerate(categories, start=offset+1):
         text += f"📂 {i}. {name}\n"
@@ -66,9 +67,10 @@ async def category_page(callback: CallbackQuery, state: FSMContext):
         return
     total_pages = (total + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE
     
+    separator = "━" * 17
     text = (
     f"🛍 *DAFTAR KATEGORI • Page {page}/{total_pages}*\n"
-    f"━━━━━━━━━━━━━━━━━\n")
+    f"{separator}\n")
 
 
     for i, (_, name) in enumerate(categories, start=offset+1):
@@ -94,9 +96,10 @@ async def show_categories(target, state: FSMContext, page: int = 1):
         return
     total_pages = (total + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE
     
+    separator = "━" * 17
     text = (
     f"🛍 *DAFTAR KATEGORI • Page {page}/{total_pages}*\n"
-    f"━━━━━━━━━━━━━━━━━\n")
+    f"{separator}\n")
 
     for i, (_, name) in enumerate(categories, start=offset+1):
         text += f"📂 {i}. {name}\n"

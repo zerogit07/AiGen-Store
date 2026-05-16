@@ -1,0 +1,266 @@
+/* ============================================================
+   AiGen Store Admin Dashboard - Global CSS
+   ============================================================ */
+
+/* ---------- RESET & BASE ---------- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+    --bg-body: #0f0f0f; --bg-card: #1a1a1a; --bg-header: #111111;
+    --bg-sidebar: #111111; --bg-tab: #0f0f0f; --bg-overlay: rgba(0,0,0,0.5);
+    --text-primary: #ffffff; --text-secondary: #a0a0a0; --text-muted: #666666;
+    --accent: #3b82f6; --accent-hover: #2563eb; --green: #10b981;
+    --green-hover: #059669; --red: #ef4444; --red-hover: #dc2626;
+    --yellow: #f59e0b; --border: #2a2a2a; --border-light: #333333;
+    --sidebar-width: 240px; --header-height: 52px; --tab-height: 44px;
+    --footer-height: 32px; --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px;
+    --transition: 0.25s ease;
+}
+
+html, body {
+    height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-body); color: var(--text-primary); font-size: 14px; line-height: 1.5;
+    -webkit-tap-highlight-color: transparent; overflow: hidden;
+}
+
+body { display: flex; flex-direction: column; }
+
+/* ---------- HEADER ---------- */
+.header {
+    position: sticky; top: 0; z-index: 50; display: flex; align-items: center; gap: 12px;
+    padding: 0 12px; height: var(--header-height); background: var(--bg-header);
+    border-bottom: 1px solid var(--border);
+}
+.header-btn {
+    background: none; border: none; color: var(--text-primary); font-size: 1.4em;
+    cursor: pointer; padding: 6px 8px; border-radius: var(--radius-sm);
+    transition: background var(--transition); display: flex; align-items: center; justify-content: center;
+}
+.header-btn:active { background: var(--border); }
+.header-title { flex: 1; font-size: 1.05em; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.profile-btn { font-size: 1.3em; }
+
+/* ---------- SIDEBAR ---------- */
+.sidebar {
+    position: fixed; top: 0; left: 0; width: var(--sidebar-width); height: 100%;
+    background: var(--bg-sidebar); border-right: 1px solid var(--border); z-index: 100;
+    transform: translateX(-100%); transition: transform var(--transition); overflow-y: auto;
+    display: flex; flex-direction: column;
+}
+.sidebar.open { transform: translateX(0); }
+.sidebar nav { padding: 12px 0; flex: 1; }
+.sidebar ul { list-style: none; }
+.sidebar-item {
+    width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px 20px;
+    background: none; border: none; color: var(--text-secondary); font-size: 0.95em;
+    font-weight: 500; cursor: pointer; transition: all var(--transition); text-align: left;
+    border-left: 3px solid transparent;
+}
+.sidebar-item:active { background: var(--border); }
+.sidebar-item.active { color: var(--accent); background: rgba(59,130,246,0.08); border-left-color: var(--accent); }
+.sidebar-icon { font-size: 1.3em; width: 24px; text-align: center; flex-shrink: 0; }
+.sidebar-text { white-space: nowrap; }
+
+/* ---------- OVERLAY ---------- */
+.overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: var(--bg-overlay); z-index: 90; opacity: 0; pointer-events: none;
+    transition: opacity var(--transition);
+}
+.overlay.show { opacity: 1; pointer-events: auto; }
+
+/* ---------- TAB BAR ---------- */
+.tab-bar {
+    display: flex; gap: 0; overflow-x: auto; padding: 0 8px; background: var(--bg-tab);
+    border-bottom: 1px solid var(--border); height: var(--tab-height);
+    scrollbar-width: none;
+}
+.tab-bar::-webkit-scrollbar { display: none; }
+.tab-btn {
+    flex-shrink: 0; padding: 10px 16px; background: none; border: none; color: var(--text-secondary);
+    font-size: 0.85em; font-weight: 500; cursor: pointer; border-bottom: 2px solid transparent;
+    transition: all var(--transition); white-space: nowrap;
+}
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-btn:active { background: var(--border); }
+
+/* ---------- KONTEN UTAMA ---------- */
+.content { flex: 1; overflow-y: auto; padding: 14px 12px; scroll-behavior: smooth; }
+.placeholder { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 1em; }
+
+/* ---------- CARD ---------- */
+.card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md);
+    padding: 14px; margin-bottom: 10px; transition: border var(--transition);
+}
+.card:hover { border-color: var(--border-light); }
+.card-row {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;
+    flex-wrap: wrap; gap: 6px; font-size: 0.85em;
+}
+.card-row:last-of-type { margin-bottom: 0; }
+.card-label { color: var(--text-muted); }
+.card-value { color: var(--text-primary); font-weight: 500; }
+.card-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+/* ---------- BUTTONS ---------- */
+.btn {
+    flex: 1; padding: 10px 0; border: none; border-radius: var(--radius-sm);
+    font-weight: 600; font-size: 0.9em; cursor: pointer; transition: all var(--transition);
+    text-align: center;
+}
+.btn:active { transform: scale(0.97); }
+.btn-approve { background: var(--green); color: #fff; }
+.btn-approve:hover { background: var(--green-hover); }
+.btn-reject { background: var(--red); color: #fff; }
+.btn-reject:hover { background: var(--red-hover); }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-outline { background: transparent; border: 1px solid var(--border-light); color: var(--text-primary); }
+.btn-outline:hover { background: var(--border); }
+
+/* ---------- TOAST ---------- */
+.toast {
+    position: fixed; top: calc(var(--header-height) + 12px); left: 50%;
+    transform: translateX(-50%); z-index: 200; padding: 10px 20px;
+    border-radius: var(--radius-sm); font-size: 0.85em; font-weight: 500;
+    color: #fff; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+    max-width: 90%; text-align: center;
+}
+.toast.show { opacity: 1; pointer-events: auto; }
+.toast.success { background: var(--green); }
+.toast.error { background: var(--red); }
+.toast.info { background: var(--accent); }
+
+/* ---------- MODAL ---------- */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: var(--bg-overlay); z-index: 150; display: flex;
+    align-items: center; justify-content: center; opacity: 0;
+    pointer-events: none; transition: opacity var(--transition);
+}
+.modal-overlay.show { opacity: 1; pointer-events: auto; }
+.modal {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius-md); padding: 20px; width: 90%;
+    max-width: 320px; text-align: center;
+}
+.modal p { margin-bottom: 16px; font-size: 0.9em; color: var(--text-secondary); }
+.modal-actions { display: flex; gap: 10px; }
+
+/* ---------- FOOTER ---------- */
+.footer {
+    height: var(--footer-height); display: flex; align-items: center;
+    justify-content: center; font-size: 0.75em; color: var(--text-muted);
+    border-top: 1px solid var(--border); background: var(--bg-header);
+}
+
+/* ---------- UTILITY ---------- */
+.hidden { display: none !important; }
+
+/* ---------- RESPONSIVE ---------- */
+@media (min-width: 768px) {
+    .sidebar { transform: translateX(0); position: relative; width: var(--sidebar-width); }
+    .header { left: var(--sidebar-width); }
+    .header-btn[aria-label="Toggle sidebar"] { display: none; }
+    .overlay { display: none; }
+    .content { margin-left: 0; }
+}
+
+/* Tambahkan di global.css jika belum ada */
+.btn-full {
+    width: 100%;
+    margin-bottom: 12px;
+}
+.btn-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.btn-row .btn {
+    flex: 1;
+    font-size: 0.85em;
+    padding: 8px 0;
+}
+
+/* ---------- MODAL KONFIRMASI ---------- */
+.confirm-modal {
+    text-align: center;
+}
+.confirm-modal p {
+    margin-bottom: 20px;
+    font-size: 0.95em;
+    color: var(--text-secondary);
+}
+.confirm-modal .modal-actions {
+    display: flex;
+    gap: 10px;
+}
+.confirm-modal .btn-danger {
+    background: var(--red);
+    color: #fff;
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+}
+.confirm-modal .btn-cancel {
+    background: transparent;
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+    flex: 1;
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+}
+/* ---------- MODAL KONFIRMASI ---------- */
+.confirm-modal { text-align: center; }
+.confirm-modal p { margin-bottom: 20px; font-size: 0.95em; color: var(--text-secondary); }
+.confirm-modal .modal-actions { display: flex; gap: 10px; }
+
+/* Tombol lebar penuh merah */
+.btn-full-danger {
+    width: 100%;
+    padding: 12px;
+    background: var(--red);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: 1em;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+.btn-full-danger:active {
+    transform: scale(0.97);
+    background: var(--red-hover);
+}
+
+/* Pastikan tombol lebar penuh merah tampil sempurna */
+.btn-full-danger {
+    width: 100% !important;
+    padding: 14px !important;
+    background: var(--red) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: var(--radius-sm) !important;
+    font-weight: 700 !important;
+    font-size: 1em !important;
+    text-align: center !important;
+    cursor: pointer !important;
+    display: block !important;
+}
+
+/* ── TABEL ── */
+.table-responsive { overflow-x: auto; }
+.order-table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+.order-table th, .order-table td { padding: 8px 6px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+.order-table th { background: var(--bg-card); color: var(--text-secondary); font-weight: 600; }
+.badge { padding: 2px 8px; border-radius: 12px; font-size: 0.75em; font-weight: 600; }
+.badge-success { background: var(--green); color: #fff; }
+.badge-danger { background: var(--red); color: #fff; }
+.btn-small { padding: 4px 8px; font-size: 0.8em; }
+.badge-warning { background: var(--yellow); color: #000; }
