@@ -196,13 +196,80 @@ async function deleteHistory() {
         }
     );
 }
-function viewProof(fileId) {
-    if (fileId.startsWith("http")) {
-        window.open(fileId, "_blank");
-    } else {
-        window.open(
-            `https://api.telegram.org/file/bot${BOT_TOKEN}/${fileId}`,
-            "_blank"
+
+function viewProof(url) {
+
+    if (!url) {
+
+        showToast(
+            "Bukti tidak tersedia",
+            "error"
         );
+
+        return;
     }
+
+    // cegah modal dobel
+    const old =
+        document.getElementById(
+            "proofModal"
+        );
+
+    if (old) {
+
+        old.remove();
+
+    }
+
+    const html = `
+
+<div
+class="proof-overlay"
+id="proofModal">
+
+    <div class="proof-box">
+
+        <button
+        class="proof-close"
+        onclick="closeProof()">
+
+            ✕
+
+        </button>
+
+        <img
+        src="${url}"
+        class="proof-image"
+
+        onerror="
+        this.outerHTML=
+        '<p style=\'padding:30px;text-align:center\'>❌ Gagal memuat gambar</p>'
+        ">
+
+    </div>
+
+</div>
+
+`;
+
+    document.body.insertAdjacentHTML(
+        "beforeend",
+        html
+    );
+
+}
+
+function closeProof() {
+
+    const modal =
+        document.getElementById(
+            "proofModal"
+        );
+
+    if (modal) {
+
+        modal.remove();
+
+    }
+
 }
