@@ -1,0 +1,167 @@
+/* =====================================
+   AiGen Store - Orders Table
+   Modern Compact Dark UI
+===================================== */
+
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-top: 12px;
+
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .25);
+}
+
+.table-responsive::-webkit-scrollbar {
+    height: 5px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: var(--border-light);
+    border-radius: 999px;
+}
+
+.order-table {
+    width: 100%;
+    min-width: 760px;
+    border-collapse: collapse;
+}
+
+/* ===== HEADER ===== */
+
+.order-table thead {
+    background: #151515;
+}
+
+.order-table th {
+    padding: 10px 12px;
+    text-align: left;
+
+    font-size: .72rem;
+    font-weight: 700;
+
+    color: var(--text-secondary);
+
+    text-transform: uppercase;
+    letter-spacing: .4px;
+
+    border-bottom: 1px solid var(--border);
+
+    white-space: nowrap;
+}
+
+/* ===== BODY ===== */
+
+.order-table td {
+    padding: 8px 12px;
+
+    font-size: .84rem;
+    line-height: 1.2;
+
+    border-bottom: 1px solid rgba(255, 255, 255, .05);
+
+    white-space: nowrap;
+}
+
+.order-table tr:last-child td {
+    border-bottom: none;
+}
+
+.order-table tbody tr {
+    transition: .18s ease;
+}
+
+.order-table tbody tr:hover {
+    background: rgba(255, 255, 255, .03);
+}
+
+/* nomor */
+
+.order-table td:first-child {
+    width: 42px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+/* order id */
+
+.order-table td:nth-child(2) {
+    font-family: monospace;
+    color: #7dd3fc;
+}
+
+/* produk */
+
+.order-table td:nth-child(4) {
+    max-width: 190px;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* total */
+
+.order-table td:nth-child(6) {
+    color: #10b981;
+    font-weight: 700;
+}
+
+/* ===== STATUS ===== */
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 3px 8px;
+
+    border-radius: 999px;
+
+    font-size: .68rem;
+    font-weight: 700;
+}
+
+.badge-success {
+    background: rgba(16, 185, 129, .14);
+    color: #10b981;
+}
+
+.badge-danger {
+    background: rgba(239, 68, 68, .14);
+    color: #ef4444;
+}
+
+/* ===== BUTTON ===== */
+
+.btn-small {
+    min-width: auto;
+
+    padding: 5px 8px;
+
+    font-size: .75rem;
+
+    border-radius: 8px;
+}
+
+/* ===== MOBILE ===== */
+
+@media(max-width:768px) {
+
+    .order-table {
+        min-width: 720px;
+    }
+
+    .order-table th {
+        padding: 9px 10px;
+    }
+
+    .order-table td {
+        padding: 7px 10px;
+        font-size: .8rem;
+    }
+
+}
