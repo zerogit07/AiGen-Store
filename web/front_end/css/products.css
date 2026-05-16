@@ -1,4 +1,68 @@
-/* Baris daftar estetik */
+/* ============================================================
+   AiGen Store - Products Page CSS
+   ============================================================ */
+
+/* ---------- FORM ---------- */
+.form-group {
+    margin-bottom: 12px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.85em;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.form-select {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.9em;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 20px;
+}
+
+.form-input {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.9em;
+    outline: none;
+}
+
+.form-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.9em;
+    font-family: inherit;
+    resize: vertical;
+    outline: none;
+}
+
+.list-title {
+    font-size: 1em;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+}
+
+/* ---------- LIST ROW ---------- */
 .list-row {
     display: flex;
     justify-content: space-between;
@@ -10,11 +74,21 @@
     margin-bottom: 8px;
     transition: border var(--transition);
 }
-.list-row:hover { border-color: var(--border-light); }
-.list-row-label { font-weight: 500; }
-.list-row-actions { display: flex; gap: 4px; }
 
-/* Ikon aksi */
+.list-row:hover {
+    border-color: var(--border-light);
+}
+
+.list-row-label {
+    font-weight: 500;
+}
+
+.list-row-actions {
+    display: flex;
+    gap: 4px;
+}
+
+/* ---------- ICON BUTTON ---------- */
 .btn-icon {
     background: none;
     border: none;
@@ -25,16 +99,32 @@
     border-radius: var(--radius-sm);
     transition: all var(--transition);
 }
-.btn-icon:hover { color: var(--text-primary); background: var(--border); }
 
-/* Tombol full-width */
-.btn-full { width: 100%; margin-bottom: 12px; }
+.btn-icon:hover {
+    color: var(--text-primary);
+    background: var(--border);
+}
 
-/* Baris tombol kecil (Tambah, Impor, Ekspor) */
-.btn-row { display: flex; gap: 8px; margin-bottom: 12px; }
-.btn-row .btn { flex: 1; font-size: 0.85em; padding: 8px 0; }
+/* ---------- FULL-WIDTH BUTTON ---------- */
+.btn-full {
+    width: 100%;
+    margin-bottom: 12px;
+}
 
-/* Pagination */
+/* ---------- BUTTON ROW ---------- */
+.btn-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.btn-row .btn {
+    flex: 1;
+    font-size: 0.85em;
+    padding: 8px 0;
+}
+
+/* ---------- PAGINATION ---------- */
 .pagination {
     display: flex;
     justify-content: center;
@@ -42,6 +132,7 @@
     gap: 10px;
     margin-top: 12px;
 }
+
 .btn-page {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -51,58 +142,37 @@
     cursor: pointer;
     font-size: 0.9em;
 }
-.btn-page:hover { background: var(--border); }
 
-/* Form select & input (sudah ada di global, tambahan jika perlu) */
-.form-select, .form-input, .form-textarea {
-    width: 100%;
-    padding: 10px 12px;
-    margin-top: 5px;
-    margin-bottom: 10px;
+.btn-page:hover {
+    background: var(--border);
+}
+
+/* ---------- SUMMARY GRID (BARU) ---------- */
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.summary-card {
     background: var(--bg-card);
-    color: var(--text-primary);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    font-size: 0.9em;
-    outline: none;
-}
-
-.form-textarea{
-    height:60px;      /* kecilkan tinggi */
-    min-height:50px;
-    resize:vertical;      /* opsional: biar tidak bisa ditarik */
-}
-
-/* ---------- MODAL KONFIRMASI ---------- */
-.confirm-modal {
+    padding: 12px 8px;
     text-align: center;
 }
-.confirm-modal p {
-    margin-bottom: 20px;
-    font-size: 0.95em;
+
+.summary-label {
+    font-size: 0.7em;
     color: var(--text-secondary);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
-.confirm-modal .modal-actions {
-    display: flex;
-    gap: 10px;
-}
-.confirm-modal .btn-danger {
-    background: var(--red);
-    color: #fff;
-    flex: 1;
-    padding: 10px;
-    border: none;
-    border-radius: var(--radius-sm);
-    font-weight: 600;
-    cursor: pointer;
-}
-.confirm-modal .btn-cancel {
-    background: transparent;
-    border: 1px solid var(--border-light);
-    color: var(--text-primary);
-    flex: 1;
-    padding: 10px;
-    border-radius: var(--radius-sm);
-    font-weight: 600;
-    cursor: pointer;
+
+.summary-value {
+    font-size: 1.6em;
+    font-weight: 700;
+    color: var(--accent);
 }

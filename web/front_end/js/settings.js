@@ -11,7 +11,7 @@ async function renderBannerSettings() {
         const data = await res.json();
         let html = '<div class="card"><div class="card-row"><span class="card-label">Status</span><span class="card-value">' + (data.banner ? '✅ Ada' : '❌ Belum diatur') + '</span></div></div>';
         html += '<div class="card-actions"><input type="file" id="bannerFile" accept="image/*" style="display:none;">';
-        html += '<button class="btn btn-primary" onclick="document.getElementById(\'bannerFile\').click()">📤 Upload</button>';
+        html += '<button class="btn btn-primary" onclick="document.getElementById(\'bannerFile\').click()">🔄 Upload Or Ganti</button>';
         html += '<button class="btn btn-outline" onclick="deleteBanner()">🗑️ Hapus</button></div>';
         content.innerHTML = html;
 
@@ -43,7 +43,7 @@ async function renderQrisSettings() {
         const data = await res.json();
         let html = '<div class="card"><div class="card-row"><span class="card-label">Status</span><span class="card-value">' + (data.qris ? '✅ Ada' : '❌ Belum diatur') + '</span></div></div>';
         html += '<div class="card-actions"><input type="file" id="qrisFile" accept="image/*" style="display:none;">';
-        html += '<button class="btn btn-primary" onclick="document.getElementById(\'qrisFile\').click()">📤 Upload</button>';
+        html += '<button class="btn btn-primary" onclick="document.getElementById(\'qrisFile\').click()">🔄 Upload Or Ganti</button>';
         html += '<button class="btn btn-outline" onclick="deleteQris()">🗑️ Hapus</button></div>';
         content.innerHTML = html;
 
@@ -130,3 +130,10 @@ async function manualDelete() {
         }
     );
 }
+
+
+// Di renderBannerSettings, cari:
+'<button class="btn btn-primary" onclick="document.getElementById(\'bannerFile\').click()">📤 Upload</button>'
+// Ganti menjadi:
+
+// Di renderQrisSettings, lakukan hal yang sama:

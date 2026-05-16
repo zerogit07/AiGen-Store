@@ -1,3 +1,4 @@
+# web/back_end/services/order_service.py
 import asyncio
 import logging
 from aiogram import Bot
@@ -42,9 +43,22 @@ async def approve_order_service(order_id: str):
         codes.append(items[0][1])
         await mark_item_used(items[0][0], order_id)
     await update_order_status(order_id, 'approved')
+    
+    # Ambil detail produk untuk notifikasi
+    sub_name, cat_name = await get_order_details_by_item_id(item_id)
+    codes_text = "\n".join([f"{i+1}. {code}" for i, code in enumerate(codes)])
+    
     try:
-        codes_text = "\n".join(f"`{c}`" for c in codes)
-        await bot.send_message(user_id, f"✅ Pesanan {order_id} disetujui!\nKode Anda:\n{codes_text}", parse_mode=ParseMode.MARKDOWN)
+        await bot.send_message(
+            user_id,
+            f"✅ *Pesanan Disetujui!*\n\n"
+            f"📦 Order ID: `{order_id}`\n"
+            f"📂 Produk: {cat_name} → {sub_name}\n"
+            f"🔢 Jumlah: {qty}\n\n"
+            f"🎫 *Item:*\n{codes_text}\n\n"
+            f"Terima kasih telah berbelanja!",
+            parse_mode=ParseMode.MARKDOWN
+        )
     except Exception: 
         pass
     return {"success": True, "message": f"Disetujui. {qty} kode dikirim."}
@@ -54,8 +68,21 @@ async def reject_order_service(order_id: str):
     if not order or order[7] != 'pending':
         return {"success": False, "message": "Pesanan tidak valid."}
     await update_order_status(order_id, 'rejected')
+    
+    # Ambil detail produk untuk notifikasi
+    item_id = order[2]
+    sub_name, cat_name = await get_order_details_by_item_id(item_id)
+    qty = order[3] 
     try:
-        await bot.send_message(order[1], f"❌ Pesanan {order_id} ditolak.", parse_mode=ParseMode.MARKDOWN)
+        await bot.send_message(
+            order[1],
+            f"❌ *Pesanan Ditolak!*\n\n"
+            f"📦 Order ID: `{order_id}`\n"
+            f"📂 Produk: {cat_name} → {sub_name}\n"
+            f"🔢 Jumlah: {qty}\n\n"
+            f"Silakan hubungi admin untuk informasi lebih lanjut.",
+            parse_mode=ParseMode.MARKDOWN
+        )
     except Exception: 
         pass
     return {"success": True, "message": "Pesanan ditolak."}

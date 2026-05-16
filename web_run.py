@@ -16,16 +16,18 @@ BANNER = """
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s │ %(levelname)-8s │ %(message)s",
-    datefmt="%H:%M:%S"
+    datefmt="%H:%M:%S",
 )
 logger = logging.getLogger("web_runner")
 
 # ─── Shutdown Event ───────────────────────────
 shutdown_event = asyncio.Event()
 
+
 def handle_signal(sig, frame):
     logger.info("🛑 Sinyal shutdown diterima, menutup server...")
     shutdown_event.set()
+
 
 # ─── Main ─────────────────────────────────────
 async def main():
@@ -38,7 +40,7 @@ async def main():
         port=8000,
         reload=True,
         log_level="info",
-        use_colors=True
+        use_colors=True,
     )
     server = uvicorn.Server(config)
 
@@ -61,6 +63,7 @@ async def main():
         pass
     finally:
         logger.info("👋 Server web dimatikan. Sampai jumpa!")
+
 
 if __name__ == "__main__":
     try:

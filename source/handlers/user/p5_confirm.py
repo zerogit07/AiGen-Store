@@ -3,14 +3,16 @@ from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKe
 from aiogram.fsm.context import FSMContext
 from source.states.user_state import UserState
 from source.database.queries import (
-    update_order_payment_proof, get_order_by_id, get_order_details,
-    get_available_item, mark_item_used, update_order_status, is_user_registered, get_item_subcategory
+    update_order_payment_proof, get_order_by_id, get_order_details_by_item_id,
+    get_available_item, mark_item_used, update_order_status, is_user_registered,
+    get_item_subcategory
 )
 from source.utils.helpers import format_rupiah
 from source.config import ADMIN_ID, BOT_TOKEN
 
 router = Router()
 bot = Bot(token=BOT_TOKEN)
+
 
 @router.message(UserState.waiting_proof, F.photo)
 async def receive_proof(message: Message, state: FSMContext):
@@ -21,16 +23,14 @@ async def receive_proof(message: Message, state: FSMContext):
         await state.clear()
         return
 
-    # ── Ambil order dulu untuk validasi ──
     order = await get_order_by_id(order_id)
     if not order:
         await message.answer("❌ Pesanan tidak ditemukan.")
         await state.clear()
         return
 
-    order_user_id = order[1]  # indeks 1 = user_id
+    order_user_id = order[1]
 
-    # ── PAGAR VALIDASI ────────────────
     if not await is_user_registered(order_user_id):
         await message.answer("⚠️ Anda belum terdaftar. Silakan ketik /start terlebih dahulu.")
         await state.clear()
@@ -40,35 +40,32 @@ async def receive_proof(message: Message, state: FSMContext):
         await message.answer("❌ Anda tidak memiliki akses ke pesanan ini.")
         await state.clear()
         return
-    # ──────────────────────────────────
 
-    # ── Simpan bukti pembayaran ────────
     file_id = message.photo[-1].file_id
     await update_order_payment_proof(order_id, file_id)
 
-    # ── Siapkan notifikasi untuk admin ──
     user_id = order_user_id
     qty = order[3]
     total = order[4]
     three_digits = order[5]
-    sub_name, cat_name = await get_order_details(order[2])
+    nominal = total + int(three_digits)  # total yang harus dibayar
+
+    # order[2] sekarang adalah item_id
+    sub_name, cat_name = await get_order_details_by_item_id(order[2])
 
     caption = (
         f"🆕 *Pesanan Baru!*\n\n"
         f"📦 Order ID: `{order_id}`\n"
         f"👤 User ID: `{user_id}`\n"
-        f"📂 Kategori: {cat_name}\n"
-        f"📦 Subkategori: {sub_name}\n"
+        f"📂 Produk: {cat_name} → {sub_name}\n"
         f"🔢 Jumlah: {qty}\n"
-        f"💰 Total: Rp{format_rupiah(total)}\n"
-        f"🔑 Kode Unik: {three_digits}"
+        f"💰 Total : Rp{format_rupiah(nominal)}"
     )
     keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="✅ Setujui", callback_data=f"approve_{order_id}"),
          InlineKeyboardButton(text="❌ Tolak", callback_data=f"reject_{order_id}")]
     ])
 
-    # Kirim ke admin
     await bot.send_photo(ADMIN_ID, photo=file_id, caption=caption,
                          parse_mode="Markdown", reply_markup=keyboard)
 
@@ -78,108 +75,111 @@ async def receive_proof(message: Message, state: FSMContext):
 
 @router.callback_query(F.data.startswith("approve_"))
 async def approve_order(callback: CallbackQuery):
-
-    # Validasi admin
     if callback.from_user.id != ADMIN_ID:
         await callback.answer("❌ Unauthorized", show_alert=True)
         return
 
-    # Ambil order_id dari callback
     order_id = callback.data.split("_", 1)[1]
-
-    # Ambil data order
     order = await get_order_by_id(order_id)
 
-    # Validasi order
     if not order or order[7] != 'pending':
-        await callback.answer(
-            "❌ Pesanan tidak valid atau sudah diproses.",
-            show_alert=True
-        )
+        await callback.answer("❌ Pesanan tidak valid atau sudah diproses.", show_alert=True)
         return
 
-    # Data order
     user_id = order[1]
-    item_id_in_order = order[2]           
-    subcategory_id = await get_item_subcategory(item_id_in_order)
+    item_id = order[2]
     qty = order[3]
+    subcategory_id = await get_item_subcategory(item_id)
 
-    # Ambil stok sesuai qty
     items = await get_available_item(subcategory_id, qty)
 
-    # Validasi stok
     if len(items) < qty:
         await callback.message.edit_reply_markup(reply_markup=None)
-
         await callback.message.answer(
             f"❌ Stok tidak cukup untuk pesanan {order_id}.\n\n"
             f"📦 Diminta: {qty}\n"
             f"📦 Tersedia: {len(items)}"
         )
-
         await callback.answer("Stok tidak cukup", show_alert=True)
         return
 
-    # Hilangkan tombol approve/reject agar tidak double click
     await callback.message.edit_reply_markup(reply_markup=None)
 
     codes = []
-
-    # Tandai semua item sebagai used
-    for item_id, code in items:
-        await mark_item_used(item_id, order_id)
+    for iid, code in items:
+        await mark_item_used(iid, order_id)
         codes.append(code)
 
-    # Update status order
     await update_order_status(order_id, 'approved')
 
-    # Format semua kode
-    codes_text = "\n".join(
-        [f"{i+1}. `{code}`" for i, code in enumerate(codes)]
-    )
+    # Ambil detail produk berdasarkan item_id
+    sub_name, cat_name = await get_order_details_by_item_id(item_id)
+    codes_text = "\n".join([f"{i+1}. {c}" for i, c in enumerate(codes)])
 
-    # Kirim kode ke user
+    # Kirim notifikasi ke user TANPA parse_mode (teks biasa)
     try:
         await bot.send_message(
             user_id,
-            f"✅ *Pesanan {order_id} disetujui!*\n\n"
-            f"📦 Jumlah: {qty}\n\n"
-            f"🔑 Kode Anda:\n{codes_text}\n\n"
-            f"Terima kasih telah berbelanja.",
-            parse_mode="Markdown"
+            f"✅ Pesanan Disetujui!\n\n"
+            f"📦 Order ID: {order_id}\n"
+            f"📂 Produk: {cat_name} → {sub_name}\n"
+            f"🔢 Jumlah: {qty}\n\n"
+            f"🎫 Item:\n{codes_text}\n\n"
+            f"Terima kasih telah berbelanja!"
         )
-
         await callback.message.answer(
-            f"✅ Pesanan {order_id} telah DISETUJUI.\n"
-            f"📦 {qty} item berhasil dikirim ke user."
+            f"✅ Pesanan Disetujui\n\n"
+            f"📦 Order ID : {order_id}\n"
+            f"📂 Produk   : {cat_name} → {sub_name}\n"
+            f"🔢 Jumlah   : {qty} item\n"
+            f"📤 Status   : Kode terkirim ke user."
         )
-
     except Exception as e:
         await callback.message.answer(
-            f"⚠️ Pesanan {order_id} disetujui, "
-            f"tetapi gagal mengirim kode ke user:\n{e}"
+            f"⚠️ Pesanan {order_id} disetujui, tetapi gagal mengirim kode ke user:\n{e}"
         )
 
     await callback.answer()
+
 
 @router.callback_query(F.data.startswith("reject_"))
 async def reject_order(callback: CallbackQuery):
     order_id = callback.data.split("_")[1]
     order = await get_order_by_id(order_id)
+
     if not order or order[7] != 'pending':
         await callback.answer("❌ Pesanan tidak valid atau sudah diproses.", show_alert=True)
         return
 
     await update_order_status(order_id, 'rejected')
-    user_id = order[1]  # indeks 1 = user_id
+
+    user_id = order[1]
+    item_id = order[2]
+    qty = order[3]
+
+    sub_name, cat_name = await get_order_details_by_item_id(item_id)
 
     try:
-        await bot.send_message(user_id,
-            f"❌ *Pesanan {order_id} ditolak.*\nSilakan hubungi admin untuk informasi lebih lanjut.",
-            parse_mode="Markdown")
+        await bot.send_message(
+            user_id,
+            f"❌ Pesanan Ditolak!\n\n"
+            f"📦 Order ID: {order_id}\n"
+            f"📂 Produk: {cat_name} → {sub_name}\n"
+            f"🔢 Jumlah: {qty}\n\n"
+            f"Silakan hubungi admin untuk informasi lebih lanjut."
+        )
         await callback.message.edit_reply_markup(reply_markup=None)
-        await callback.message.answer(f"❌ Pesanan {order_id} telah DITOLAK.")
+        await callback.message.answer(
+            f"❌ Pesanan Ditolak\n\n"
+            f"📦 Order ID : {order_id}\n"
+            f"📂 Produk   : {cat_name} → {sub_name}\n"
+            f"🔢 Jumlah   : {qty} item\n"
+            f"📤 Status   : User telah diberi notifikasi"
+        )
     except Exception as e:
         await callback.message.edit_reply_markup(reply_markup=None)
-        await callback.message.answer(f"⚠️ Pesanan {order_id} ditolak, tetapi gagal notifikasi user: {e}")
+        await callback.message.answer(
+            f"⚠️ Pesanan {order_id} ditolak, tetapi gagal notifikasi user: {e}"
+        )
+
     await callback.answer()

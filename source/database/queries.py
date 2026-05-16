@@ -593,10 +593,13 @@ async def delete_all_used_items() -> int:
     """Hapus semua item yang sudah terpakai (is_used = 1). Return jumlah yang dihapus."""
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("PRAGMA foreign_keys = ON")
+        # Hapus dulu order yang terkait dengan item terpakai
+        await db.execute("DELETE FROM orders WHERE item_id IN (SELECT id FROM items WHERE is_used = 1)")
+        # Baru hapus item-nya
         cursor = await db.execute("DELETE FROM items WHERE is_used = 1")
         await db.commit()
         return cursor.rowcount
-
+        
 #web produk
 async def update_category_name(category_id: int, name: str):
     async with aiosqlite.connect(DB_PATH) as db:
@@ -667,3 +670,4 @@ async def get_order_details_by_item_id(item_id: int):
         ''', (item_id,)) as cursor:
             row = await cursor.fetchone()
             return row if row else (None, None)
+            

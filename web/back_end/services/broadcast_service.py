@@ -13,8 +13,9 @@ bot = Bot(token=BOT_TOKEN)
 TARGET_LABELS = {
     "all": "Semua User",
     "buyers": "Pernah Beli",
-    "nonbuyers": "Belum Pernah Beli"
+    "nonbuyers": "Belum Pernah Beli",
 }
+
 
 async def get_targets():
     """Mengembalikan daftar target dengan jumlah user."""
@@ -25,8 +26,13 @@ async def get_targets():
     return [
         {"key": "all", "label": TARGET_LABELS["all"], "count": len(all_ids)},
         {"key": "buyers", "label": TARGET_LABELS["buyers"], "count": len(buyer_ids)},
-        {"key": "nonbuyers", "label": TARGET_LABELS["nonbuyers"], "count": len(nonbuyer_ids)},
+        {
+            "key": "nonbuyers",
+            "label": TARGET_LABELS["nonbuyers"],
+            "count": len(nonbuyer_ids),
+        },
     ]
+
 
 async def send_broadcast(target: str, text: str) -> dict:
     """Mengirim broadcast ke target yang dipilih."""
@@ -58,5 +64,5 @@ async def send_broadcast(target: str, text: str) -> dict:
         "message": f"Broadcast selesai. Terkirim: {success}, Gagal: {failed}",
         "total": total,
         "sent": success,
-        "failed": failed
+        "failed": failed,
     }

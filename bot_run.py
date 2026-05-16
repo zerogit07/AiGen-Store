@@ -4,7 +4,7 @@ from aiogram import Bot, Dispatcher
 from source.config import BOT_TOKEN
 from source.database.schema import init_db
 
-# Handler User 
+# Handler User
 from source.handlers.user.p1_category import router as p1_router
 from source.handlers.user.p2_subcategory import router as p2_router
 from source.handlers.user.p3_input import router as p3_router
@@ -24,19 +24,20 @@ from source.handlers.admin.s8_settings import router as settings_router
 
 logging.basicConfig(level=logging.INFO)
 
+
 async def main():
     await init_db()
     print("🤖 Bot berjalan...")
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
-    
+
     # Daftarkan router user
     dp.include_router(p1_router)
     dp.include_router(p2_router)
     dp.include_router(p3_router)
     dp.include_router(p4_router)
     dp.include_router(p5_router)
-    
+
     # Admin router sementara tidak disertakan
     dp.include_router(admin_router)
     dp.include_router(category_router)
@@ -50,7 +51,6 @@ async def main():
 
     await dp.start_polling(bot)
 
+
 if __name__ == "__main__":
     asyncio.run(main())
-    
-    

@@ -42,10 +42,10 @@ async def send_qris_message(message, state: FSMContext, user_id: int = None):
     cat_name = await get_category_name_by_subcategory(subcategory_id)
     qris_file_id = await get_config("qris_image_file_id")
 
-    title = "TOTAL PEMBAYARAN".center(38)
-    nominal_text = f"Rp{format_rupiah(nominal)}".center(38)
+    title = "TOTAL PEMBAYARAN".center(32)
+    nominal_text = f"Rp{format_rupiah(nominal)}".center(32)
     separator_a= "━" * 17
-    separator_b= "━" * 34
+    
     
     caption = (
     "🧾 <b>RINGKASAN PESANAN</b>\n"
@@ -56,10 +56,8 @@ async def send_qris_message(message, state: FSMContext, user_id: int = None):
     f"🛒 Jumlah   : {qty}\n"
     f"💵 Harga    : Rp{format_rupiah(price)}\n"
     f"🔑 Kode     : {three_digits}\n"
-    f"{separator_b}\n"
     f"{title}\n"
-    f"{nominal_text}\n"
-    f"{separator_b}\n"
+    f"{nominal_text}"
     "</pre>"
     "➡️ Setelah pembayaran selesai,\n"
     "klik tombol <b>Kirim Bukti</b>👇")

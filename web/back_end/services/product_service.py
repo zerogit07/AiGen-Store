@@ -1,6 +1,8 @@
 # web/back_end/services/product_service.py
 import csv
 import io
+import aiosqlite
+from source.config import DB_PATH
 from source.database.queries import (
     get_all_categories,
     get_subcategories_by_category,
@@ -71,7 +73,7 @@ async def get_items(subcategory_id: int, limit=10, offset=0):
     items, total = await get_available_items_by_subcategory(subcategory_id, limit, offset)
     data = []
     for item in items:
-        item_id, code, is_used = item  # pastikan query mengembalikan is_used
+        item_id, code, is_used = item
         data.append({"id": item_id, "code": code, "is_used": bool(is_used)})
     return {"data": data, "total": total}
 
@@ -106,7 +108,6 @@ async def import_csv_preview(subcategory_id: int, content: str):
     for row in reader:
         if row:
             codes.append(row[0].strip())
-    # Validasi sederhana
     existing_items, _ = await get_available_items_by_subcategory(subcategory_id, limit=10000, offset=0)
     existing_codes = {item[1] for item in existing_items}
     preview = []
@@ -131,3 +132,46 @@ async def get_product_stats():
         "total_subcategories": await get_subcategory_count(),
         "total_items": await get_item_count()
     }
+
+
+# ── Fungsi baru untuk Grid Ringkasan ─────────────────────
+async def get_summary_stats(tab: str, category_id: int = None, subcategory_id: int = None):
+    if tab == 'kategori':
+        total = await get_category_count()
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute("PRAGMA foreign_keys = ON")
+            cursor = await db.execute("SELECT COUNT(DISTINCT category_id) FROM subcategories")
+            terisi = (await cursor.fetchone())[0]
+        return {"total": total, "terisi": terisi, "kosong": total - terisi}
+
+    elif tab == 'subkategori':
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute("PRAGMA foreign_keys = ON")
+            if category_id:
+                cursor = await db.execute("SELECT COUNT(*) FROM subcategories WHERE category_id = ?", (category_id,))
+                total = (await cursor.fetchone())[0]
+                cursor = await db.execute(
+                    "SELECT COUNT(DISTINCT subcategory_id) FROM items WHERE subcategory_id IN (SELECT id FROM subcategories WHERE category_id = ?)",
+                    (category_id,))
+                terisi = (await cursor.fetchone())[0]
+            else:
+                cursor = await db.execute("SELECT COUNT(*) FROM subcategories")
+                total = (await cursor.fetchone())[0]
+                cursor = await db.execute("SELECT COUNT(DISTINCT subcategory_id) FROM items")
+                terisi = (await cursor.fetchone())[0]
+        return {"total": total, "terisi": terisi, "kosong": total - terisi}
+
+    elif tab == 'item':
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute("PRAGMA foreign_keys = ON")
+            if subcategory_id:
+                cursor = await db.execute("SELECT COUNT(*) FROM items WHERE subcategory_id = ?", (subcategory_id,))
+                total = (await cursor.fetchone())[0]
+                cursor = await db.execute("SELECT COUNT(*) FROM items WHERE subcategory_id = ? AND is_used = 0", (subcategory_id,))
+                tersedia = (await cursor.fetchone())[0]
+            else:
+                cursor = await db.execute("SELECT COUNT(*) FROM items")
+                total = (await cursor.fetchone())[0]
+                cursor = await db.execute("SELECT COUNT(*) FROM items WHERE is_used = 0")
+                tersedia = (await cursor.fetchone())[0]
+        return {"total": total, "tersedia": tersedia, "terpakai": total - tersedia}

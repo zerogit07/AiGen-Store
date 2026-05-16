@@ -1,27 +1,68 @@
 // @ts-nocheck
-// products.js
-(function() {
+// products.js - AiGen Store Dashboard
+(function () {
     let currentProductPage = 1;
     let currentSubId = null;
     const itemsPerPage = 10;
 
     // ── Entry point ──
-    window.loadProductsPage = async function(tab) {
+    window.loadProductsPage = async function (tab) {
         if (tab === 'kategori') await renderCategories(1);
-        else if (tab === 'data') await window.loadDataTab();
         else if (tab === 'subkategori') await renderSubcategorySelector(1);
         else if (tab === 'item') await renderItemSelector(1);
+        else if (tab === 'data') await window.loadDataTab();
     };
 
+    // ═══════════════ RINGKASAN GRID ═══════════════
+    async function fetchSummary(tab, params = '') {
+        const res = await fetch(`/api/products/summary?tab=${tab}${params}`);
+        return await res.json();
+    }
+
+    function renderSummaryGrid(summary, tab) {
+        let items = [];
+        if (tab === 'kategori') {
+            items = [
+                { label: 'Total', value: summary.total, sub: 'Kategori' },
+                { label: 'Terisi', value: summary.terisi, sub: 'Kategori' },
+                { label: 'Kosong', value: summary.kosong, sub: 'Kategori' }
+            ];
+        } else if (tab === 'subkategori') {
+            items = [
+                { label: 'Total', value: summary.total, sub: 'Subkategori' },
+                { label: 'Terisi', value: summary.terisi, sub: 'Subkategori' },
+                { label: 'Kosong', value: summary.kosong, sub: 'Subkategori' }
+            ];
+        } else if (tab === 'item') {
+            items = [
+                { label: 'Total', value: summary.total, sub: 'Item' },
+                { label: 'Tersedia', value: summary.tersedia, sub: 'Item' },
+                { label: 'Terpakai', value: summary.terpakai, sub: 'Item' }
+            ];
+        }
+        return `
+            <div class="summary-grid">
+                ${items.map(i => `
+                    <div class="summary-card">
+                        <div class="summary-label">${i.sub} ${i.label}</div>
+                        <div class="summary-value">${i.value}</div>
+                    </div>
+                `).join('')}
+            </div>`;
+    }
+
     // ═══════════════ KATEGORI ═══════════════
-    window.renderCategories = async function(page) {
+    async function renderCategories(page) {
         currentProductPage = page;
         try {
-            const res = await fetch(`/api/products/categories?page=${page}&limit=${itemsPerPage}`);
-            const data = await res.json();
-            let html = '<button class="btn btn-primary btn-full" onclick="window.showCategoryModal()">➕ Tambah Kategori</button>';
+            const [catRes, sumData] = await Promise.all([
+                fetch(`/api/products/categories?page=${page}&limit=${itemsPerPage}`).then(r => r.json()),
+                fetchSummary('kategori')
+            ]);
+            let html = renderSummaryGrid(sumData, 'kategori');
+            html += '<button class="btn btn-primary btn-full" onclick="window.showCategoryModal()">➕ Tambah Kategori</button>';
             html += '<div id="catList">';
-            data.data.forEach(c => {
+            catRes.data.forEach(c => {
                 html += `
                     <div class="list-row">
                         <span class="list-row-label">${c.name}</span>
@@ -32,12 +73,16 @@
                     </div>`;
             });
             html += '</div>';
-            html += paginationControls(page, data.total, 'window.renderCategories');
+            html += paginationControls(page, catRes.total, 'renderCategories');
             content.innerHTML = html;
-        } catch (e) { content.innerHTML = '<div class="placeholder"><p>❌ Gagal memuat kategori.</p></div>'; }
-    };
+        } catch (e) {
+            content.innerHTML = '<div class="placeholder"><p>❌ Gagal memuat kategori.</p></div>';
+        }
+    }
 
-    window.showCategoryModal = function(id = null, oldName = '') {
+    window.renderCategories = renderCategories;
+
+    window.showCategoryModal = function (id = null, oldName = '') {
         const title = id ? 'Edit Kategori' : 'Tambah Kategori';
         const action = id ? `window.updateCategory(${id})` : 'window.createCategory()';
         const html = `
@@ -56,12 +101,12 @@
         document.body.insertAdjacentHTML('beforeend', html);
     };
 
-    window.closeModal = function() {
+    window.closeModal = function () {
         const overlay = document.getElementById('modalOverlay');
         if (overlay) overlay.remove();
     };
 
-    window.createCategory = async function() {
+    window.createCategory = async function () {
         const name = document.getElementById('modalInput').value.trim();
         if (!name) return showToast('Nama tidak boleh kosong.', 'error');
         const formData = new FormData();
@@ -73,7 +118,7 @@
         if (data.success) renderCategories(currentProductPage);
     };
 
-    window.updateCategory = async function(id) {
+    window.updateCategory = async function (id) {
         const name = document.getElementById('modalInput').value.trim();
         if (!name) return showToast('Nama tidak boleh kosong.', 'error');
         const formData = new FormData();
@@ -85,11 +130,11 @@
         if (data.success) renderCategories(currentProductPage);
     };
 
-    window.editCategory = function(id, name) {
+    window.editCategory = function (id, name) {
         showCategoryModal(id, name);
     };
 
-    window.deleteCategory = function(id) {
+    window.deleteCategory = function (id) {
         window.showConfirmModal(
             'Yakin hapus kategori ini? Semua subkategori dan item akan ikut terhapus.',
             async () => {
@@ -102,7 +147,7 @@
     };
 
     // ═══════════════ SUBKATEGORI ═══════════════
-    window.renderSubcategorySelector = async function(page = 1, selectedCatId = null) {
+    window.renderSubcategorySelector = async function (page = 1, selectedCatId = null) {
         currentProductPage = page;
         const catsRes = await fetch('/api/products/categories?limit=100');
         const cats = await catsRes.json();
@@ -122,11 +167,14 @@
     };
 
     async function renderSubcategories(catId, page) {
-        const res = await fetch(`/api/products/subcategories?category_id=${catId}&page=${page}&limit=${itemsPerPage}`);
-        const data = await res.json();
+        const [subRes, sumData] = await Promise.all([
+            fetch(`/api/products/subcategories?category_id=${catId}&page=${page}&limit=${itemsPerPage}`).then(r => r.json()),
+            fetchSummary('subkategori', `&category_id=${catId}`)
+        ]);
         const subList = document.getElementById('subList');
-        let html = '<button class="btn btn-primary btn-full" onclick="window.showSubcategoryModal(' + catId + ')">➕ Tambah Subkategori</button>';
-        data.data.forEach(s => {
+        let html = renderSummaryGrid(sumData, 'subkategori');
+        html += '<button class="btn btn-primary btn-full" onclick="window.showSubcategoryModal(' + catId + ')">➕ Tambah Subkategori</button>';
+        subRes.data.forEach(s => {
             html += `
                 <div class="list-row">
                     <span class="list-row-label">${s.name} (Rp${s.price})</span>
@@ -136,12 +184,11 @@
                     </div>
                 </div>`;
         });
-        html += paginationControls(page, data.total, 'window.renderSubcategoriesPage');
-        window.renderSubcategoriesPage = function(p) { renderSubcategories(catId, p); };
+        html += paginationControls(page, subRes.total, `(function(p){ renderSubcategories(${catId}, p) })`);
         subList.innerHTML = html;
     }
 
-    window.showSubcategoryModal = function(catId, subId = null, oldName = '', oldPrice = '') {
+    window.showSubcategoryModal = function (catId, subId = null, oldName = '', oldPrice = '') {
         const title = subId ? 'Edit Subkategori' : 'Tambah Subkategori';
         const action = subId ? `window.updateSubcategory(${subId})` : `window.createSubcategory(${catId})`;
         const html = `
@@ -163,7 +210,7 @@
         document.body.insertAdjacentHTML('beforeend', html);
     };
 
-    window.createSubcategory = async function(catId) {
+    window.createSubcategory = async function (catId) {
         const name = document.getElementById('modalName').value.trim();
         const price = document.getElementById('modalPrice').value.trim();
         if (!name || !price) return showToast('Semua kolom harus diisi.', 'error');
@@ -178,7 +225,7 @@
         if (data.success) renderSubcategories(catId, currentProductPage);
     };
 
-    window.updateSubcategory = async function(subId) {
+    window.updateSubcategory = async function (subId) {
         const name = document.getElementById('modalName').value.trim();
         const price = document.getElementById('modalPrice').value.trim();
         if (!name || !price) return showToast('Semua kolom harus diisi.', 'error');
@@ -195,11 +242,11 @@
         }
     };
 
-    window.editSubcategory = function(subId, catId, name, price) {
+    window.editSubcategory = function (subId, catId, name, price) {
         showSubcategoryModal(catId, subId, name, price);
     };
 
-    window.deleteSubcategory = function(subId) {
+    window.deleteSubcategory = function (subId) {
         window.showConfirmModal(
             'Yakin hapus subkategori ini? Semua item akan ikut terhapus.',
             async () => {
@@ -214,8 +261,9 @@
         );
     };
 
+
     // ═══════════════ ITEM ═══════════════
-    window.renderItemSelector = async function(page = 1) {
+    window.renderItemSelector = async function (page = 1) {
         currentProductPage = page;
         const catsRes = await fetch('/api/products/categories?limit=100');
         const cats = await catsRes.json();
@@ -249,15 +297,18 @@
     };
 
     async function renderItems(subId, page) {
-        const res = await fetch(`/api/products/items?subcategory_id=${subId}&page=${page}&limit=${itemsPerPage}`);
-        const data = await res.json();
+        const [itemRes, sumData] = await Promise.all([
+            fetch(`/api/products/items?subcategory_id=${subId}&page=${page}&limit=${itemsPerPage}`).then(r => r.json()),
+            fetchSummary('item', `&subcategory_id=${subId}`)
+        ]);
         const itemList = document.getElementById('itemList');
-        let html = '<div class="btn-row">';
+        let html = renderSummaryGrid(sumData, 'item');
+        html += '<div class="btn-row">';
         html += '<button class="btn btn-primary" onclick="window.showItemModal(' + subId + ')">➕ Tambah</button>';
         html += '<button class="btn btn-outline" onclick="window.importCSV(' + subId + ')">📥 Impor</button>';
         html += '<button class="btn btn-outline" onclick="window.exportCSV(' + subId + ')">📤 Ekspor</button>';
         html += '</div>';
-        data.data.forEach(item => {
+        itemRes.data.forEach(item => {
             html += `
                 <div class="list-row">
                     <span class="list-row-label">${item.code} <small>(${item.is_used ? '🔒 Terpakai' : '🟢 Tersedia'})</small></span>
@@ -269,12 +320,11 @@
                     </div>
                 </div>`;
         });
-        html += paginationControls(page, data.total, 'window.renderItemsPage');
-        window.renderItemsPage = function(p) { renderItems(subId, p); };
+        html += paginationControls(page, itemRes.total, `(function(p){ renderItems(${subId}, p) })`);
         itemList.innerHTML = html;
     }
 
-    window.showItemModal = function(subId, itemId = null, oldCode = '') {
+    window.showItemModal = function (subId, itemId = null, oldCode = '') {
         const title = itemId ? 'Edit Item' : 'Tambah Item';
         const action = itemId ? `window.updateItem(${itemId})` : `window.createItem(${subId})`;
         const html = `
@@ -293,7 +343,7 @@
         document.body.insertAdjacentHTML('beforeend', html);
     };
 
-    window.createItem = async function(subId) {
+    window.createItem = async function (subId) {
         const codes = document.getElementById('modalCode').value.trim();
         if (!codes) return showToast('Kode tidak boleh kosong.', 'error');
         const formData = new FormData();
@@ -306,7 +356,7 @@
         if (data.success) renderItems(subId, currentProductPage);
     };
 
-    window.updateItem = async function(itemId) {
+    window.updateItem = async function (itemId) {
         const newCode = document.getElementById('modalCode').value.trim();
         if (!newCode) return showToast('Kode tidak boleh kosong.', 'error');
         const formData = new FormData();
@@ -320,11 +370,11 @@
         }
     };
 
-    window.editItem = function(itemId, code) {
+    window.editItem = function (itemId, code) {
         showItemModal(currentSubId, itemId, code);
     };
 
-    window.deleteItem = function(itemId) {
+    window.deleteItem = function (itemId) {
         window.showConfirmModal(
             'Yakin hapus item ini?',
             async () => {
@@ -338,7 +388,7 @@
         );
     };
 
-    window.exportCSV = async function(subId) {
+    window.exportCSV = async function (subId) {
         const res = await fetch(`/api/products/items/export?subcategory_id=${subId}`);
         const data = await res.json();
         const blob = new Blob([data.codes.join('\n')], { type: 'text/csv' });
@@ -350,7 +400,7 @@
         URL.revokeObjectURL(url);
     };
 
-    window.importCSV = async function(subId) {
+    window.importCSV = async function (subId) {
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
         fileInput.accept = '.csv';
@@ -367,7 +417,7 @@
                 html += `<div>${p.code} - ${p.status === 'duplicate' ? '⚠️ Duplikat' : '✅ Baru'}</div>`;
             });
             html += `<div class="modal-actions">
-                <button class="btn btn-primary" onclick="window.executeImport(${subId}, '${preview.filter(p=>p.status==='new').map(p=>p.code).join('\n')}')">Impor Semua Baru</button>
+                <button class="btn btn-primary" onclick="window.executeImport(${subId}, '${preview.filter(p => p.status === 'new').map(p => p.code).join('\n')}')">Impor Semua Baru</button>
                 <button class="btn btn-outline" onclick="window.closeModal()">Batal</button>
             </div></div></div>`;
             document.body.insertAdjacentHTML('beforeend', html);
@@ -375,7 +425,7 @@
         fileInput.click();
     };
 
-    window.executeImport = async function(subId, codes) {
+    window.executeImport = async function (subId, codes) {
         const formData = new FormData();
         formData.append('subcategory_id', subId);
         formData.append('codes', codes);
@@ -386,63 +436,71 @@
         if (data.success) renderItems(subId, currentProductPage);
     };
 
+    // ═══════════════ DATA (Ekspor/Impor Global) ═══════════════
+    window.loadDataTab = async function () {
+        content.innerHTML = `<div class="placeholder"><p>🔄 Memuat data...</p></div>`;
+        let html = '<div class="list-title">📦 Data Global</div>';
+        html += '<div class="btn-row">';
+        html += '<button class="btn btn-primary" onclick="window.exportAllData()">📤 Ekspor CSV Global</button>';
+        html += '<button class="btn btn-outline" onclick="window.importGlobalCSV()">📥 Impor CSV Global</button>';
+        html += '</div>';
+        html += '<div id="importResult"></div>';
+        content.innerHTML = html;
+    };
+
+    window.exportAllData = async function () {
+        try {
+            const res = await fetch('/api/products/export-all');
+            if (!res.ok) {
+                showToast('Gagal mengekspor data.', 'error');
+                return;
+            }
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'semua_item.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('✅ Ekspor berhasil.', 'success');
+        } catch (e) {
+            showToast('❌ Gagal mengekspor data.', 'error');
+        }
+    };
+
+    window.importGlobalCSV = function () {
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.csv';
+        fileInput.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const formData = new FormData();
+            formData.append('file', file);
+            showToast('⏳ Mengimpor...', 'info');
+            try {
+                const res = await fetch('/api/products/import', { method: 'POST', body: formData });
+                const data = await res.json();
+                showToast(data.message, data.success ? 'success' : 'error');
+                if (data.success) {
+                    document.getElementById('importResult').innerHTML = `<p>✅ ${data.message}</p>`;
+                }
+            } catch (err) {
+                showToast('❌ Gagal mengimpor.', 'error');
+            }
+        };
+        fileInput.click();
+    };
+
     // ── Pagination ──
     function paginationControls(page, total, callback) {
         const totalPages = Math.ceil(total / itemsPerPage);
         if (totalPages <= 1) return '';
         let html = '<div class="pagination">';
-        if (page > 1) html += `<button class="btn-page" onclick="(${callback})(${page-1})">◀</button>`;
+        if (page > 1) html += `<button class="btn-page" onclick="(${callback})(${page - 1})">◀</button>`;
         html += `<span>Hal ${page}/${totalPages}</span>`;
-        if (page < totalPages) html += `<button class="btn-page" onclick="(${callback})(${page+1})">▶</button>`;
+        if (page < totalPages) html += `<button class="btn-page" onclick="(${callback})(${page + 1})">▶</button>`;
         html += '</div>';
         return html;
     }
 })();
-
-// ═══════════════ DATA (Ekspor/Impor Global) ═══════════════
-window.loadDataTab = async function() {
-    let html = '';
-    html += '<div class="btn-row">';
-    html += '<button class="btn btn-primary" onclick="window.exportAllData()">📤 Ekspor CSV Global</button>';
-    html += '<button class="btn btn-outline" onclick="window.importGlobalCSV()">📥 Impor CSV Global</button>';
-    html += '</div>';
-    html += '<div id="importResult"></div>';
-    content.innerHTML = html;
-};
-
-window.exportAllData = async function() {
-    const res = await fetch('/api/products/export-all');
-    if (!res.ok) {
-        showToast('Gagal mengekspor data.', 'error');
-        return;
-    }
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'semua_item.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-};
-
-window.importGlobalCSV = function() {
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.csv';
-    fileInput.onchange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const formData = new FormData();
-        formData.append('file', file);
-        const res = await fetch('/api/products/import', { method: 'POST', body: formData });
-        const data = await res.json();
-        showToast(data.message, data.success ? 'success' : 'error');
-        if (data.success) {
-            document.getElementById('importResult').innerHTML = `<p>✅ ${data.message}</p>`;
-        }
-    };
-    fileInput.click();
-};
-
-// Tambahkan di loadProductsPage: else if (tab === 'data') await loadDataTab();
-// Kita update loadProductsPage dengan patch
