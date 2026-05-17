@@ -17,15 +17,10 @@ let currentTab = "";
 function updatePageTitle(page) {
     const titles = {
         home: "🏠 Home",
-
         products: "📂 Produk",
-
         orders: "📦 Pesanan",
-
         broadcast: "📣 Broadcast",
-
         settings: "⚙️ Pengaturan",
-
         profile: "👤 Profil"
     };
 
@@ -41,7 +36,6 @@ function updateTabBar(page, tabs) {
 
     if (!tabs) {
         tabBar.classList.add("hidden");
-
         return;
     }
 
@@ -49,25 +43,15 @@ function updateTabBar(page, tabs) {
 
     const labels = {
         kategori: "Kategori",
-
         subkategori: "Subkategori",
-
         item: "Item",
-
         data: "Data",
-
         masuk: "Masuk",
-
         pending: "Pending",
-
         riwayat: "Riwayat",
-
         banner: "Banner",
-
         qris: "QRIS",
-
         autodelete: "Auto Delete",
-
         manualdelete: "Manual Delete"
     };
 
@@ -75,12 +59,10 @@ function updateTabBar(page, tabs) {
         const btn = document.createElement("button");
 
         btn.className = "tab-btn";
-
         btn.textContent = labels[tab] || tab;
 
         if (index === 0) {
             btn.classList.add("active");
-
             currentTab = tab;
         }
 
@@ -104,10 +86,9 @@ function updateTabBar(page, tabs) {
 
 async function loadPageContent(page, tab = "") {
     content.innerHTML = `
-<div class="placeholder">
-<p>🔄 Memuat...</p>
-</div>
-`;
+    <div class="placeholder">
+        <p>🔄 Memuat...</p>
+    </div>`;
 
     try {
         if (page === "home") {
@@ -122,19 +103,17 @@ async function loadPageContent(page, tab = "") {
             await loadSettingsPage(tab);
         } else {
             content.innerHTML = `
-<div class="placeholder">
-Halaman belum tersedia
-</div>
-`;
+            <div class="placeholder">
+                Halaman belum tersedia
+            </div>`;
         }
     } catch (e) {
-        content.innerHTML = `
-<div class="placeholder">
-❌ Gagal memuat
-</div>
-`;
-
         console.log(e);
+
+        content.innerHTML = `
+        <div class="placeholder">
+            ❌ Gagal memuat
+        </div>`;
     }
 }
 
@@ -144,13 +123,9 @@ Halaman belum tersedia
 
 const navConfig = {
     home: "",
-
     products: "kategori,subkategori,item,data",
-
     orders: "masuk,pending,riwayat",
-
     broadcast: "",
-
     settings: "banner,qris,autodelete,manualdelete"
 };
 
@@ -224,16 +199,14 @@ window.showConfirmModal = function (message, callback) {
         "beforeend",
 
         `
-<div
-id="confirmModal"
+<div id="confirmModal"
 class="modal-overlay show">
 
 <div class="modal">
 
 <p>${message}</p>
 
-<div
-class="modal-actions">
+<div class="modal-actions">
 
 <button
 id="confirmYesBtn"
@@ -286,9 +259,8 @@ $("#profileBtn").onclick = () => {
 NOTIF
 ========================= */
 
-$("#notifBtn").onclick = () => {
-    showToast("Belum ada notifikasi", "info");
-};
+// Handler notif dipindah ke notifications.js
+// Jangan isi onclick di sini
 
 /* =========================
 INIT

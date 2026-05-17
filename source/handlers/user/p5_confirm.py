@@ -16,6 +16,7 @@ from source.database.queries import (
     update_order_status,
     is_user_registered,
     get_item_subcategory,
+    add_notification,
 )
 from source.utils.helpers import format_rupiah
 from source.config import ADMIN_ID, BOT_TOKEN
@@ -100,6 +101,16 @@ async def receive_proof(message: Message, state: FSMContext):
         caption=caption,
         parse_mode="Markdown",
         reply_markup=keyboard,
+    )
+
+    # notif dashboard
+    await add_notification(
+        type="order",
+        title="📦 Pesanan baru",
+        message=f"#{order_id}",
+        page="orders",
+        tab="masuk",
+        related_id=str(order_id),
     )
 
     await message.answer(
