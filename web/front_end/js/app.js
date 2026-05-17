@@ -1,195 +1,303 @@
-// web/front_end/js/app.js
+// AiGen Store - App Entry (Bottom Navigation)
 
-// AiGen Store - Entry Point
-const $ = (sel) => document.querySelector(sel);
-const $$ = (sel) => document.querySelectorAll(sel);
+const $ = sel => document.querySelector(sel);
+const $$ = sel => document.querySelectorAll(sel);
 
-const sidebar = $('#sidebar');
-const overlay = $('#overlay');
-const sidebarToggle = $('#sidebarToggle');
-const pageTitle = $('#pageTitle');
-const tabBar = $('#tabBar');
-const content = $('#content');
+const pageTitle = $("#pageTitle");
+const tabBar = $("#tabBar");
+const content = $("#content");
 
-let currentPage = 'home';
-let currentTab = '';
-let sidebarOpen = false;
+let currentPage = "home";
+let currentTab = "";
 
-// ---------- SIDEBAR ----------
-function openSidebar() {
-    if (!sidebar) return;
-    sidebar.classList.add('open');
-    if (overlay) overlay.classList.add('show');
-    sidebarOpen = true;}
+/* =========================
+   PAGE TITLE
+========================= */
 
-function closeSidebar() {
-    if (!sidebar) return;
-    sidebar.classList.remove('open');
-    if (overlay) overlay.classList.remove('show');
-    sidebarOpen = false;}
-
-function toggleSidebar() {
-    sidebarOpen ? closeSidebar() : openSidebar();}
-
-if (sidebarToggle) sidebarToggle.addEventListener('click', toggleSidebar);
-if (overlay) overlay.addEventListener('click', closeSidebar);
-
-// Swipe gesture
-let touchStartX = 0;
-document.addEventListener('touchstart', (e) => {
-    touchStartX = e.touches[0].clientX;
-}, { passive: true });
-
-document.addEventListener('touchend', (e) => {
-    if (!sidebar) return;
-    const diff = e.changedTouches[0].clientX - touchStartX;
-    if (diff > 80 && touchStartX < 40 && !sidebarOpen) openSidebar();
-});
-
-// ---------- NAVIGASI ----------
 function updatePageTitle(page) {
-    if (!pageTitle) return;
     const titles = {
-        home: '🏠 Home',
-        products: '📂 Produk',
-        orders: '📦 Pesanan',
-        broadcast: '📣 Broadcast',
-        settings: '⚙️ Pengaturan'
+        home: "🏠 Home",
+
+        products: "📂 Produk",
+
+        orders: "📦 Pesanan",
+
+        broadcast: "📣 Broadcast",
+
+        settings: "⚙️ Pengaturan",
+
+        profile: "👤 Profil"
     };
+
     pageTitle.textContent = titles[page] || page;
 }
 
+/* =========================
+   TAB
+========================= */
+
 function updateTabBar(page, tabs) {
-    if (!tabBar) return;
-    tabBar.innerHTML = '';
-    if (!tabs || tabs.trim() === '') {
-        tabBar.classList.add('hidden');
+    tabBar.innerHTML = "";
+
+    if (!tabs) {
+        tabBar.classList.add("hidden");
+
         return;
     }
-    tabBar.classList.remove('hidden');
-    const tabLabels = {
-        data: 'Data',
-        kategori: 'Kategori',
-        subkategori: 'Subkategori',
-        item: 'Item',
-        masuk: 'Masuk',
-        pending: 'Pending',
-        riwayat: 'Riwayat',
-        banner: 'Banner',
-        qris: 'QRIS',
-        autodelete: 'Auto Delete',
-        manualdelete: 'Manual Delete'
+
+    tabBar.classList.remove("hidden");
+
+    const labels = {
+        kategori: "Kategori",
+
+        subkategori: "Subkategori",
+
+        item: "Item",
+
+        data: "Data",
+
+        masuk: "Masuk",
+
+        pending: "Pending",
+
+        riwayat: "Riwayat",
+
+        banner: "Banner",
+
+        qris: "QRIS",
+
+        autodelete: "Auto Delete",
+
+        manualdelete: "Manual Delete"
     };
-    tabs.split(',').forEach((tab, i) => {
-        const name = tab.trim();
-        const btn = document.createElement('button');
-        btn.className = 'tab-btn';
-        btn.textContent = tabLabels[name] || name;
-        btn.dataset.tab = name;
-        if (i === 0) btn.classList.add('active');
-        btn.addEventListener('click', () => {
-            $$('.tab-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            currentTab = name;
-            loadPageContent(page, name);
-        });
+
+    tabs.split(",").forEach((tab, index) => {
+        const btn = document.createElement("button");
+
+        btn.className = "tab-btn";
+
+        btn.textContent = labels[tab] || tab;
+
+        if (index === 0) {
+            btn.classList.add("active");
+
+            currentTab = tab;
+        }
+
+        btn.onclick = () => {
+            $$(".tab-btn").forEach(x => x.classList.remove("active"));
+
+            btn.classList.add("active");
+
+            currentTab = tab;
+
+            loadPageContent(page, tab);
+        };
+
         tabBar.appendChild(btn);
     });
 }
 
-const sidebarItems = $$('.sidebar-item');
-sidebarItems.forEach(item => {
-    item.addEventListener('click', () => {
-        const page = item.dataset.page;
-        const tabs = item.dataset.tabs;
-        sidebarItems.forEach(i => i.classList.remove('active'));
-        item.classList.add('active');
-        updatePageTitle(page);
-        updateTabBar(page, tabs);
-        loadPageContent(page, tabs ? tabs.split(',')[0] : '');
-        if (window.innerWidth < 768) closeSidebar();
-        currentPage = page;
-    });
-});
+/* =========================
+   LOAD PAGE
+========================= */
 
-// ---------- LOAD CONTENT ----------
-async function loadPageContent(page, tab) {
-    if (!content) return;
-    content.innerHTML = '<div class="placeholder"><p>🔄 Memuat data...</p></div>';
-    if (page === 'home') await loadHomePage();
-    else if (page === 'orders') await loadOrdersPage(tab);
-    else if (page === 'products') await loadProductsPage(tab);
-    else if (page === 'broadcast') await loadBroadcastPage();
-    else if (page === 'settings') await loadSettingsPage(tab);
-    else content.innerHTML = '<div class="placeholder"><p>📄 Segera hadir.</p></div>';
+async function loadPageContent(page, tab = "") {
+    content.innerHTML = `
+<div class="placeholder">
+<p>🔄 Memuat...</p>
+</div>
+`;
+
+    try {
+        if (page === "home") {
+            await loadHomePage();
+        } else if (page === "products") {
+            await loadProductsPage(tab);
+        } else if (page === "orders") {
+            await loadOrdersPage(tab);
+        } else if (page === "broadcast") {
+            await loadBroadcastPage();
+        } else if (page === "settings") {
+            await loadSettingsPage(tab);
+        } else {
+            content.innerHTML = `
+<div class="placeholder">
+Halaman belum tersedia
+</div>
+`;
+        }
+    } catch (e) {
+        content.innerHTML = `
+<div class="placeholder">
+❌ Gagal memuat
+</div>
+`;
+
+        console.log(e);
+    }
 }
 
-// ---------- TOAST NOTIFICATION ----------
+/* =========================
+   BOTTOM NAV
+========================= */
+
+const navConfig = {
+    home: "",
+
+    products: "kategori,subkategori,item,data",
+
+    orders: "masuk,pending,riwayat",
+
+    broadcast: "",
+
+    settings: "banner,qris,autodelete,manualdelete"
+};
+
+$$(".bottom-item").forEach(btn => {
+    btn.onclick = () => {
+        $$(".bottom-item").forEach(x => x.classList.remove("active"));
+
+        btn.classList.add("active");
+
+        const page = btn.dataset.page;
+
+        currentPage = page;
+
+        updatePageTitle(page);
+
+        updateTabBar(page, navConfig[page]);
+
+        loadPageContent(
+            page,
+            navConfig[page] ? navConfig[page].split(",")[0] : ""
+        );
+    };
+});
+
+/* =========================
+   TOAST
+========================= */
+
 let toastTimer;
-function showToast(message, type) {
-    const old = $('.toast');
+
+function showToast(message, type = "info") {
+    const old = $(".toast");
+
     if (old) old.remove();
-    if (toastTimer) clearTimeout(toastTimer);
-    const toast = document.createElement('div');
+
+    clearTimeout(toastTimer);
+
+    const toast = document.createElement("div");
+
     toast.className = `toast ${type}`;
+
     toast.textContent = message;
+
     document.body.appendChild(toast);
-    setTimeout(() => toast.classList.add('show'), 10);
+
+    setTimeout(() => {
+        toast.classList.add("show");
+    }, 10);
+
     toastTimer = setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 300);
+        toast.classList.remove("show");
+
+        setTimeout(() => {
+            toast.remove();
+        }, 300);
     }, 3000);
 }
 
-// ---------- MODAL KONFIRMASI (GLOBAL) ----------
-window.showConfirmModal = function(message, callback) {
-    var oldModal = document.getElementById('confirmModal');
-    if (oldModal) oldModal.remove();
+window.showToast = showToast;
 
-    var html = '<div id="confirmModal" class="modal-overlay show">';
-    html += '<div class="modal">';
-    html += '<p>' + message + '</p>';
-    html += '<div class="modal-actions">';
-    html += '<button id="confirmYesBtn" class="btn btn-approve">Ya</button>';
-    html += '<button id="confirmNoBtn" class="btn btn-outline">Batal</button>';
-    html += '</div></div></div>';
+/* =========================
+CONFIRM MODAL
+========================= */
 
-    document.body.insertAdjacentHTML('beforeend', html);
+window.showConfirmModal = function (message, callback) {
+    let old = document.getElementById("confirmModal");
 
-    document.getElementById('confirmYesBtn').onclick = function() {
-        var modal = document.getElementById('confirmModal');
-        if (modal) modal.remove();
+    if (old) old.remove();
+
+    document.body.insertAdjacentHTML(
+        "beforeend",
+
+        `
+<div
+id="confirmModal"
+class="modal-overlay show">
+
+<div class="modal">
+
+<p>${message}</p>
+
+<div
+class="modal-actions">
+
+<button
+id="confirmYesBtn"
+class="btn btn-approve">
+
+Ya
+
+</button>
+
+<button
+id="confirmNoBtn"
+class="btn btn-outline">
+
+Batal
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+`
+    );
+
+    document.getElementById("confirmYesBtn").onclick = () => {
+        document.getElementById("confirmModal").remove();
+
         callback();
     };
-    document.getElementById('confirmNoBtn').onclick = function() {
-        var modal = document.getElementById('confirmModal');
-        if (modal) modal.remove();
+
+    document.getElementById("confirmNoBtn").onclick = () => {
+        document.getElementById("confirmModal").remove();
     };
 };
 
-window.closeConfirmModal = function() {
-    var modal = document.getElementById('confirmModal');
-    if (modal) modal.remove();
+/* =========================
+PROFILE
+========================= */
+
+$("#profileBtn").onclick = () => {
+    updatePageTitle("profile");
+
+    tabBar.classList.add("hidden");
+
+    loadProfilePage();
 };
 
-// ---------- PROFIL ----------
-const profileBtn = document.getElementById('profileBtn');
-if (profileBtn) {
-    profileBtn.addEventListener('click', () => {
-        sidebarItems.forEach(i => i.classList.remove('active'));
-        pageTitle.textContent = '👤 Profil Admin';
-        tabBar.classList.add('hidden');
-        loadProfilePage();
-        if (window.innerWidth < 768) closeSidebar();
-        currentPage = 'profile';
-    });
-}
+/* =========================
+NOTIF
+========================= */
 
-// ---------- INIT ----------
-document.addEventListener('DOMContentLoaded', () => {
-    const home = $('.sidebar-item[data-page="home"]');
-    if (home) home.classList.add('active');
-    updatePageTitle('home');
-    updateTabBar('home', '');
-    loadPageContent('home', '');
+$("#notifBtn").onclick = () => {
+    showToast("Belum ada notifikasi", "info");
+};
+
+/* =========================
+INIT
+========================= */
+
+document.addEventListener("DOMContentLoaded", () => {
+    updatePageTitle("home");
+
+    updateTabBar("home", "");
+
+    loadPageContent("home");
 });
