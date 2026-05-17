@@ -64,10 +64,14 @@
             let html = renderSummaryGrid(sumData, 'kategori');
             html += '<button class="btn btn-primary btn-full" onclick="window.showCategoryModal()">➕ Tambah Kategori</button>';
             html += '<div id="catList">';
-            catRes.data.forEach(c => {
+            const start = (page - 1) * itemsPerPage;
+
+            catRes.data.forEach((c, index) => {
                 html += `
                     <div class="list-row">
-                        <span class="list-row-label">${c.name}</span>
+                        <span class="list-row-label">
+                            ${start + index + 1}. ${c.name}
+                        </span>
                         <div class="list-row-actions">
                             <button class="btn-icon" onclick="window.editCategory(${c.id}, '${c.name}')">✏️</button>
                             <button class="btn-icon" onclick="window.deleteCategory(${c.id})">🗑️</button>
@@ -176,15 +180,19 @@
         const subList = document.getElementById('subList');
         let html = renderSummaryGrid(sumData, 'subkategori');
         html += '<button class="btn btn-primary btn-full" onclick="window.showSubcategoryModal(' + catId + ')">➕ Tambah Subkategori</button>';
-        subRes.data.forEach(s => {
+        const start = (page - 1) * itemsPerPage;
+
+        subRes.data.forEach((s, index) => {
             html += `
-            <div class="list-row">
-                <span class="list-row-label">${s.name} (Rp${s.price})</span>
-                <div class="list-row-actions">
-                    <button class="btn-icon" onclick="window.editSubcategory(${s.id}, ${catId}, '${s.name}', ${s.price_raw})">✏️</button>
-                    <button class="btn-icon" onclick="window.deleteSubcategory(${s.id})">🗑️</button>
-                </div>
-            </div>`;
+                <div class="list-row">
+                    <span class="list-row-label">
+                        ${start + index + 1}. ${s.name} (Rp${s.price})
+                    </span>
+                    <div class="list-row-actions">
+                        <button class="btn-icon" onclick="window.editSubcategory(${s.id}, ${catId}, '${s.name}', ${s.price_raw})">✏️</button>
+                        <button class="btn-icon" onclick="window.deleteSubcategory(${s.id})">🗑️</button>
+                    </div>
+                </div>`;
         });
         html += paginationControls(page, subRes.total, `window.renderSubcategoriesPage`);
         window.renderSubcategoriesPage = function (p) { renderSubcategories(catId, p); };
@@ -311,10 +319,15 @@
         html += '<button class="btn btn-outline" onclick="window.importCSV(' + subId + ')">📥 Impor</button>';
         html += '<button class="btn btn-outline" onclick="window.exportCSV(' + subId + ')">📤 Ekspor</button>';
         html += '</div>';
-        itemRes.data.forEach(item => {
+        const start = (page - 1) * itemsPerPage;
+
+        itemRes.data.forEach((item, index) => {
             html += `
             <div class="list-row">
-                <span class="list-row-label">${item.code} <small>(${item.is_used ? '🔒 Terpakai' : '🟢 Tersedia'})</small></span>
+                <span class="list-row-label">
+                    ${start + index + 1}. ${item.code}
+                    <small>(${item.is_used ? '🔒 Terpakai' : '🟢 Tersedia'})</small>
+                </span>
                 <div class="list-row-actions">
                     ${!item.is_used ? `
                         <button class="btn-icon" onclick="window.editItem(${item.id}, '${item.code}')">✏️</button>
