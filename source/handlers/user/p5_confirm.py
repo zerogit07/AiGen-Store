@@ -17,6 +17,7 @@ from source.database.queries import (
     is_user_registered,
     get_item_subcategory,
     add_notification,
+    delete_notification_by_related_id,
 )
 from source.utils.helpers import format_rupiah
 from source.config import ADMIN_ID, BOT_TOKEN
@@ -159,6 +160,7 @@ async def approve_order(callback: CallbackQuery):
         codes.append(code)
 
     await update_order_status(order_id, "approved")
+    await delete_notification_by_related_id(order_id)
 
     # Ambil detail produk berdasarkan item_id
     sub_name, cat_name = await get_order_details_by_item_id(item_id)
@@ -202,6 +204,7 @@ async def reject_order(callback: CallbackQuery):
         return
 
     await update_order_status(order_id, "rejected")
+    await delete_notification_by_related_id(order_id)
 
     user_id = order[1]
     item_id = order[2]

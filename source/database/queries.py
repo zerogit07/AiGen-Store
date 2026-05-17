@@ -556,8 +556,17 @@ async def get_orders_by_status(status, limit=10, offset=0):
         rows = await cursor.fetchall()
         return [row[0] for row in rows]
 
+async def delete_notification_by_related_id(order_id):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            """
+            DELETE FROM notifications
+            WHERE related_id = ?
+            """,
+            (str(order_id),)
+        )
 
-# Tambahkan di source/database/queries.py
+        await db.commit()
 
 
 async def get_pending_order_ids() -> list:

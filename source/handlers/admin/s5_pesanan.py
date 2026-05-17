@@ -14,6 +14,7 @@ from source.database.queries import (
     mark_item_used,
     update_order_status,
     get_item_subcategory,
+    delete_notification_by_related_id,
 )
 from source.utils.helpers import format_rupiah
 from source.config import BOT_TOKEN
@@ -161,6 +162,7 @@ async def process_approve_all_incoming(callback: CallbackQuery):
         for item_id in item_ids:
             await mark_item_used(item_id, order_id)
         await update_order_status(order_id, 'approved')
+        await delete_notification_by_related_id(order_id)
         try:
             codes_text = "\n".join(f"`{c}`" for c in codes)
             await bot.send_message(order[1], f"✅ Pesanan {order_id} disetujui!\nKode Anda:\n{codes_text}")
@@ -204,6 +206,7 @@ async def process_reject_all_incoming(callback: CallbackQuery):
         if not order or order[7] != 'pending':
             continue
         await update_order_status(order_id, 'rejected')
+        await delete_notification_by_related_id(order_id)
         try:
             await bot.send_message(order[1], f"❌ Pesanan {order_id} ditolak.")
         except Exception:
@@ -241,7 +244,7 @@ async def approve_one(callback: CallbackQuery):
     for item_id in item_ids:
         await mark_item_used(item_id, order_id)
     await update_order_status(order_id, 'approved')
-
+    await delete_notification_by_related_id(order_id)
     user_id = order[1]
     codes_text = "\n".join(f"`{c}`" for c in codes)
     try:
@@ -262,6 +265,7 @@ async def reject_one(callback: CallbackQuery):
         return
 
     await update_order_status(order_id, 'rejected')
+    await delete_notification_by_related_id(order_id)
     try:
         await bot.send_message(order[1], f"❌ Pesanan {order_id} ditolak.")
     except Exception:

@@ -8,9 +8,11 @@ from source.database.queries import (
     get_incoming_orders, get_orders_by_status, get_order_by_id,
     get_available_item, mark_item_used, update_order_status,
     get_order_details, delete_orders_by_status, get_riwayat_orders,
-    get_item_subcategory, get_order_details_by_item_id
+    get_item_subcategory, get_order_details_by_item_id,
+    delete_notification_by_related_id
 )
 from source.utils.helpers import format_rupiah
+from html import escape
 
 bot = Bot(token=BOT_TOKEN)
 logger = logging.getLogger("order_service")
@@ -28,64 +30,96 @@ async def fetch_orders(status=None, limit=10, offset=0):
 
 async def approve_order_service(order_id: str):
     order = await get_order_by_id(order_id)
+
     if not order or order[7] != 'pending':
         return {"success": False, "message": "Pesanan tidak valid."}
+
     item_id = order[2]
     sub_id = await get_item_subcategory(item_id)
-    qty = order[3] 
+    qty = order[3]
     user_id = order[1]
+
     item_ids, codes = [], []
+
     for _ in range(qty):
         items = await get_available_item(sub_id, 1)
+
         if not items:
-            return {"success": False, "message": f"Stok tidak cukup (butuh {qty}, baru {len(codes)})."}
+            return {
+                "success": False,
+                "message": f"Stok tidak cukup (butuh {qty}, baru {len(codes)})."
+            }
+
         item_ids.append(items[0][0])
         codes.append(items[0][1])
+
         await mark_item_used(items[0][0], order_id)
+
     await update_order_status(order_id, 'approved')
-    
-    # Ambil detail produk untuk notifikasi
+
+    # hapus notif dashboard
+    await delete_notification_by_related_id(order_id)
+
     sub_name, cat_name = await get_order_details_by_item_id(item_id)
-    codes_text = "\n".join([f"{i+1}. {code}" for i, code in enumerate(codes)])
-    
+
+    codes_text = "\n".join(
+    [f"{i+1}. {escape(code)}" for i, code in enumerate(codes)])
+
     try:
         await bot.send_message(
             user_id,
-            f"✅ *Pesanan Disetujui!*\n\n"
-            f"📦 Order ID: `{order_id}`\n"
-            f"📂 Produk: {cat_name} → {sub_name}\n"
+            f"<b>✅ Pesanan Disetujui!</b>\n\n"
+            f"📦 Order ID: {order_id}\n"
+            f"📂 Produk: {escape(cat_name)} → {escape(sub_name)}\n"
             f"🔢 Jumlah: {qty}\n\n"
-            f"🎫 *Item:*\n{codes_text}\n\n"
+            f"🎫 Item:\n{codes_text}\n\n"
             f"Terima kasih telah berbelanja!",
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.HTML
         )
-    except Exception: 
-        pass
-    return {"success": True, "message": f"Disetujui. {qty} kode dikirim."}
+    except Exception as e:
+        logger.error(f"Approve notif error: {e}")
+
+    return {
+        "success": True,
+        "message": f"Disetujui. {qty} kode dikirim."
+    }
 
 async def reject_order_service(order_id: str):
     order = await get_order_by_id(order_id)
+
     if not order or order[7] != 'pending':
-        return {"success": False, "message": "Pesanan tidak valid."}
+        return {
+            "success": False,
+            "message": "Pesanan tidak valid."
+        }
+
     await update_order_status(order_id, 'rejected')
-    
-    # Ambil detail produk untuk notifikasi
+
+    # hapus notif dashboard
+    await delete_notification_by_related_id(order_id)
+
     item_id = order[2]
+
     sub_name, cat_name = await get_order_details_by_item_id(item_id)
-    qty = order[3] 
+
+    qty = order[3]
+
     try:
         await bot.send_message(
             order[1],
-            f"❌ *Pesanan Ditolak!*\n\n"
-            f"📦 Order ID: `{order_id}`\n"
-            f"📂 Produk: {cat_name} → {sub_name}\n"
+            f"<b>❌ Pesanan Ditolak!</b>\n\n"
+            f"📦 Order ID: {order_id}\n"
+            f"📂 Produk: {escape(cat_name)} → {escape(sub_name)}\n"
             f"🔢 Jumlah: {qty}\n\n"
-            f"Silakan hubungi admin untuk informasi lebih lanjut.",
-            parse_mode=ParseMode.MARKDOWN
+            f"Silakan hubungi admin.",
+            parse_mode=ParseMode.HTML
         )
-    except Exception: 
-        pass
-    return {"success": True, "message": "Pesanan ditolak."}
+    except Exception as e:
+        logger.error(f"Reject notif error: {e}")
+    return {
+        "success": True,
+        "message": "Pesanan ditolak."
+    }
 
 async def approve_all_incoming():
     orders, _ = await get_incoming_orders(limit=1000, offset=0)
