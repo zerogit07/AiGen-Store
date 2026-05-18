@@ -1,11 +1,12 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Depends
+from web.back_end.services.auth_service import get_current_admin
 from web.back_end.services.order_service import (
     fetch_orders, approve_order_service, reject_order_service,
     approve_all_incoming, reject_all_incoming,
     delete_pending, delete_history
 )
 
-router = APIRouter(prefix="/api/orders", tags=["orders"])
+router = APIRouter(prefix="/api/orders", tags=["orders"], dependencies=[Depends(get_current_admin)])
 
 @router.get("/{tab}")
 async def api_orders(tab: str, page: int = 1, limit: int = 10, filter: str = None):

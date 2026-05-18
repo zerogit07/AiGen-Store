@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Form, UploadFile, File
 from web.back_end.services.settings_service import get_settings, update_auto_delete, upload_banner, upload_qris
-from source.database.queries import set_config
+from source.database.admin import set_config
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
@@ -35,7 +35,7 @@ async def api_upload_qris(file: UploadFile = File(...)):
 # ── Manual Delete ──
 @router.post("/manual-delete")
 async def api_manual_delete():
-    from source.database.queries import get_used_items_count, delete_all_used_items
+    from source.database.products import get_used_items_count, delete_all_used_items
     count = await get_used_items_count()
     if count == 0:
         return {"success": False, "message": "Tidak ada item terpakai."}
@@ -44,7 +44,7 @@ async def api_manual_delete():
 
 @router.get("/manual-delete/count")
 async def api_manual_delete_count():
-    from source.database.queries import get_used_items_count
+    from source.database.products import get_used_items_count
     count = await get_used_items_count()
     return {"count": count}
 

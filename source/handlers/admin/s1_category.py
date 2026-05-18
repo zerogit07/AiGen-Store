@@ -3,7 +3,7 @@ from aiogram import Router, F
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from source.states.admin_state import CategoryState
-from source.database.queries import (
+from source.database.products import (
     get_all_categories, add_category, update_category, delete_category, get_category_by_id
 )
 from source.utils.helpers import pad_center

@@ -4,7 +4,7 @@ from aiogram.types import CallbackQuery, Message, BufferedInputFile, InlineKeybo
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from source.config import BOT_TOKEN
-from source.database.queries import (
+from source.database.products import (
     get_category_by_name, add_category,
     get_subcategory_by_name, add_subcategory, add_item,
     export_all_items_data

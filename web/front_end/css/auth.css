@@ -1,0 +1,119 @@
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: var(--bg-body);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.login-form {
+    background: var(--bg-card);
+    padding: 2.5rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    width: 90%;
+    max-width: 340px;
+    text-align: center;
+}
+
+.login-form h2 {
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.login-form input {
+    width: 100%;
+    padding: 12px 14px;
+    margin-bottom: 1rem;
+    background: var(--bg-header);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color var(--transition);
+}
+
+.login-form input:focus {
+    border-color: var(--accent);
+}
+
+.login-form button[type="submit"] {
+    width: 100%;
+    padding: 12px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 700;
+    transition: background var(--transition);
+    margin-top: 0.5rem;
+}
+
+.login-form button[type="submit"]:hover {
+    background: var(--accent-hover);
+}
+
+.login-form button[type="submit"]:active {
+    transform: scale(0.98);
+}
+
+.password-container {
+    position: relative;
+    width: 100%;
+}
+
+.input-wrapper {
+    position: relative;
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.input-wrapper input {
+    width: 100%;
+    padding: 12px 45px 12px 40px;
+    background: var(--bg-header);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    box-sizing: border-box;
+    outline: none;
+}
+
+.input-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    z-index: 10;
+}
+
+.toggle-password:hover {
+    color: var(--text-secondary);
+}

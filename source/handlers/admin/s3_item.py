@@ -6,7 +6,7 @@ from aiogram import Router, F, Bot
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from source.database.queries import (
+from source.database.products import (
     get_all_categories,
     get_subcategories_by_category,
     get_category_name,

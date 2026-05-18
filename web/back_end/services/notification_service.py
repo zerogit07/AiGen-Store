@@ -1,6 +1,6 @@
 # web/back_end/services/notification_service.py
 
-from source.database.queries import (
+from source.database.notifications import (
     get_notifications,
     get_unread_notification_count,
     mark_notification_read,

@@ -2,7 +2,7 @@ from aiogram import Router, F
 from aiogram.types import (CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton)
 from aiogram.fsm.context import FSMContext
 from source.states.user_state import UserState
-from source.database.queries import (
+from source.database.products import (
     get_subcategories_by_category,
     get_category_name,
     get_stock_for_subcategory,

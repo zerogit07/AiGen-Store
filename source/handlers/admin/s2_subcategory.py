@@ -3,7 +3,7 @@ from aiogram import Router, F
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from source.states.admin_state import SubcategoryState
-from source.database.queries import (
+from source.database.products import (
     get_all_categories, get_subcategories_by_category, add_subcategory,
     update_subcategory, delete_subcategory, get_category_name, get_subcategory_by_id
 )

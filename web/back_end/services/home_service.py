@@ -1,14 +1,18 @@
 # web/back_end/services/home_service.py
-from source.database.queries import (
-    get_incoming_orders,
-    get_orders_by_status,
+from source.database.admin import (
     get_total_revenue,
     get_order_counts,
+    get_total_items_sold,
+    get_remaining_stock,
+)
+from source.database.orders import (
+    get_incoming_orders,
+    get_orders_by_status,
+)
+from source.database.products import (
     get_category_count,
     get_subcategory_count,
     get_item_count,
-    get_total_items_sold,
-    get_remaining_stock,
 )
 from source.utils.helpers import format_rupiah
 

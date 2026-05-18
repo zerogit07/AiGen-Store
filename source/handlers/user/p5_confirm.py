@@ -7,15 +7,19 @@ from aiogram.types import (
 )
 from aiogram.fsm.context import FSMContext
 from source.states.user_state import UserState
-from source.database.queries import (
+from source.database.orders import (
     update_order_payment_proof,
     get_order_by_id,
     get_order_details_by_item_id,
+    update_order_status,
+)
+from source.database.products import (
     get_available_item,
     mark_item_used,
-    update_order_status,
-    is_user_registered,
     get_item_subcategory,
+)
+from source.database.users import is_user_registered
+from source.database.notifications import (
     add_notification,
     delete_notification_by_related_id,
 )

@@ -1,6 +1,6 @@
 # web/back_end/services/settings_service.py
 import aiohttp
-from source.database.queries import get_config, set_config
+from source.database.admin import get_config, set_config
 from source.config import BOT_TOKEN, ADMIN_ID   # ← tambahkan ADMIN_ID
 
 async def get_settings():

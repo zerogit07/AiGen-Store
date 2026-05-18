@@ -2,7 +2,7 @@
 import asyncio
 from aiogram import Bot
 from source.config import BOT_TOKEN
-from source.database.queries import (
+from source.database.users import (
     get_all_user_ids,
     get_buyer_user_ids,
     get_nonbuyer_user_ids,

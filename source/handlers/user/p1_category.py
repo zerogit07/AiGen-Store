@@ -8,7 +8,9 @@ from aiogram.types import (
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from source.states.user_state import UserState
-from source.database.queries import get_all_categories, add_user, get_config
+from source.database.products import get_all_categories
+from source.database.users import add_user
+from source.database.admin import get_config
 from source.utils.helpers import pad_center
 
 router = Router()

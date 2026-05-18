@@ -1,5 +1,6 @@
 # web/back_end/routes/products.py
-from fastapi import APIRouter, Query, Form, UploadFile, File
+from fastapi import APIRouter, Query, Form, UploadFile, File, Depends
+from web.back_end.services.auth_service import get_current_admin
 from web.back_end.services.product_service import (
     get_categories,
     create_category,
@@ -20,7 +21,7 @@ from web.back_end.services.product_service import (
 )
 from typing import Optional
 
-router = APIRouter(prefix="/api/products", tags=["products"])
+router = APIRouter(prefix="/api/products", tags=["products"], dependencies=[Depends(get_current_admin)])
 
 
 # ── Kategori ──
@@ -126,7 +127,7 @@ async def api_product_stats():
 # ── Ekspor/Impor Global ──
 @router.get("/export-all")
 async def api_export_all():
-    from source.database.queries import export_all_items_data
+    from source.database.products import export_all_items_data
     import csv
     import io
 
@@ -150,7 +151,7 @@ async def api_import_global(file: UploadFile = File(...)):
     import csv
     import io
 
-    from source.database.queries import (
+    from source.database.products import (
         add_item,
         get_category_by_name,
         add_category,

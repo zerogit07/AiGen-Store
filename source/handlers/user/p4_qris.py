@@ -3,8 +3,9 @@ from aiogram import Router, F, Bot
 from aiogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from source.states.user_state import UserState
-from source.database.queries import ( get_subcategory_name, get_category_name_by_subcategory,
-    create_order, get_config, get_available_item)
+from source.database.products import ( get_subcategory_name, get_category_name_by_subcategory, get_available_item)
+from source.database.orders import create_order
+from source.database.admin import get_config
 from source.utils.helpers import format_rupiah, generate_three_digits
 from source.config import BOT_TOKEN, ADMIN_ID
 

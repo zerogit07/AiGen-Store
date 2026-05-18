@@ -6,14 +6,16 @@ from aiogram.types import (
 )
 from aiogram.enums import ParseMode
 
-from source.database.queries import (
+from source.database.admin import (
     get_total_revenue,
     get_order_counts,
     get_total_items_sold,
     get_remaining_stock,
+)
+from source.database.products import (
     get_category_count,
     get_subcategory_count,
-    get_item_count
+    get_item_count,
 )
 
 from source.utils.helpers import format_rupiah

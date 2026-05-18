@@ -3,7 +3,7 @@ from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKe
 from aiogram.fsm.context import FSMContext
 from source.states.user_state import UserState
 from source.utils.helpers import format_rupiah
-from source.database.queries import get_config
+from source.database.admin import get_config
 
 router = Router()
 

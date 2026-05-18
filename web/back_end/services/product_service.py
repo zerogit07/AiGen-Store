@@ -3,7 +3,7 @@ import csv
 import io
 import aiosqlite
 from source.config import DB_PATH
-from source.database.queries import (
+from source.database.products import (
     get_all_categories,
     get_subcategories_by_category,
     get_available_items_by_subcategory,

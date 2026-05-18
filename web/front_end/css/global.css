@@ -64,7 +64,7 @@ html,
 body {
     height: 100%;
 
-    overflow: hidden;
+    overflow-y: auto;
 
     font-family:
         -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -437,6 +437,17 @@ body {
 
 /* ---------- UTILITY ---------- */
 
-.hidden {
-    display: none !important;
+.notif-badge {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: var(--red);
+    color: white;
+    font-size: 0.65rem;
+    font-weight: bold;
+    padding: 2px 5px;
+    border-radius: 10px;
+    min-width: 16px;
+    text-align: center;
+    line-height: 1;
 }

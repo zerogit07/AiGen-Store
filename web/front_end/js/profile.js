@@ -20,9 +20,20 @@ async function loadProfilePage() {
                 <span class="card-value">${data.role}</span>
             </div>
         </div>
+
+        <div style="margin-top: 20px;">
+            <button id="logoutBtn" class="btn btn-reject" style="width: 100%;">Logout</button>
+        </div>
         `;
 
         content.innerHTML = html;
+
+        // Pasang event listener untuk logout
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            window.showConfirmModal("⚠️ Yakin ingin keluar?", async () => {
+                await performLogout();
+            });
+        });
 
     } catch (e) {
         content.innerHTML =

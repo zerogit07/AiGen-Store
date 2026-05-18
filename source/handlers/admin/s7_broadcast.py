@@ -3,7 +3,7 @@ from aiogram import Router, F, Bot
 from aiogram.types import CallbackQuery, Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from source.database.queries import (
+from source.database.users import (
     get_all_user_ids,
     get_buyer_user_ids,
     get_nonbuyer_user_ids,

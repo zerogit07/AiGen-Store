@@ -14,6 +14,14 @@ async function loadNotificationPage() {
             </div>`;
         } else {
             data.forEach(n => {
+                // Tampilkan ID Pesanan dan User ID jika tipe notifikasi adalah order
+                let messageDisplay = n.message || "";
+                if (n.type === 'order') {
+                    // Mengasumsikan n.message adalah "#<order_id>"
+                    // Jika ada data user_id yang tersedia, kita bisa gunakan di sini
+                    messageDisplay = `ID Pesanan: ${n.message.replace('#', '')}`;
+                }
+
                 html += `
                 <div class="card notif-card"
                     onclick="openNotification(
@@ -27,7 +35,7 @@ async function loadNotificationPage() {
                     </div>
 
                     <div class="notif-message">
-                        ${n.message || ""}
+                        ${messageDisplay}
                     </div>
 
                     <div class="notif-time">
@@ -52,32 +60,19 @@ async function loadNotificationPage() {
 async function loadNotificationBadge() {
     try {
         const res = await fetch("/api/notifications/badge");
+        const response = await res.json();
+        const count = response.count;
 
-        const data = await res.json();
+        const badge = document.getElementById("notifBadge");
 
-        let badge = document.querySelector(".notif-badge");
-
-        if (!badge) {
-            badge = document.createElement("span");
-
-            badge.className = "notif-badge";
-
-            const btn = document.getElementById("notifBtn");
-
-            if (btn) {
-                btn.appendChild(badge);
-            }
-        }
-
-        if (data.count <= 0) {
+        if (count <= 0) {
             badge.style.display = "none";
-
+            badge.textContent = "0";
             return;
         }
 
         badge.style.display = "flex";
-
-        badge.textContent = data.count > 99 ? "99+" : data.count;
+        badge.textContent = count > 99 ? "99+" : count;
     } catch (e) {
         console.log("badge gagal", e);
     }
@@ -145,5 +140,5 @@ function formatNotifTime(dateString) {
     const bulan = ambil("month");
     const tahun = ambil("year");
 
-    return `${jam}:${menit} • ${hari}/${bulan}/${tahun} WIB`;
+    return `${jam}:${menit} • ${hari}/${bulan}/${tahun}`;
 }

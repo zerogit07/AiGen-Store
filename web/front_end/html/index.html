@@ -16,45 +16,96 @@
         <link rel="stylesheet" href="/static/css/broadcast.css" />
         <link rel="stylesheet" href="/static/css/settings.css" />
         <link rel="stylesheet" href="/static/css/notifications.css" />
+        <link rel="stylesheet" href="/static/css/auth.css" />
     </head>
 
     <body>
-        <!-- HEADER -->
+        <div id="toast-container"></div>
+        <div id="loginPage" class="auth-container" style="display: none;">
+            <form id="loginForm" class="login-form">
+                <h2>Admin Login</h2>
+                <div class="input-wrapper">
+                    <span class="input-icon">👤</span>
+                    <input type="text" id="username" placeholder="Username" required />
+                </div>
+                <div class="input-wrapper password-container">
+                    <span class="input-icon">🔑</span>
+                    <input type="password" id="password" placeholder="Password" required />
+                    <button type="button" id="togglePassword" class="toggle-password">👁️</button>
+                </div>
+                <button type="submit">Login</button>
+            </form>
+        </div>
 
-        <header class="header">
-            <button id="profileBtn" class="header-btn">👤</button>
+        <div id="mainApp" style="display: none;">
+            <!-- HEADER -->
+            <header class="header">
+                <button id="profileBtn" class="header-btn">👤</button>
+                <h1 id="pageTitle" class="header-title">🏠 Home</h1>
+                <button id="notifBtn" class="header-btn" style="position: relative;">
+                🔔
+                <span id="notifBadge" class="notif-badge" style="display: none;">0</span>
+            </button>
+            </header>
 
-            <h1 id="pageTitle" class="header-title">🏠 Home</h1>
+            <!-- TAB -->
+            <nav id="tabBar" class="tab-bar"></nav>
 
-            <button id="notifBtn" class="header-btn">🔔</button>
-        </header>
+            <!-- CONTENT -->
+            <main id="content" class="content">
+                <div class="placeholder">
+                    <p>🔄 Memuat...</p>
+                </div>
+            </main>
 
-        <!-- TAB -->
+            <!-- BOTTOM NAV -->
+            <nav class="bottom-nav">
+                <button class="bottom-item" data-page="broadcast">📣</button>
+                <button class="bottom-item" data-page="products">📂</button>
+                <button class="bottom-item active" data-page="home">🏠</button>
+                <button class="bottom-item" data-page="orders">📦</button>
+                <button class="bottom-item" data-page="settings">⚙️</button>
+            </nav>
+        </div>
 
-        <nav id="tabBar" class="tab-bar"></nav>
+        <script src="/static/js/auth.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const togglePassword = document.getElementById('togglePassword');
+                const passwordField = document.getElementById('password');
 
-        <!-- CONTENT -->
+                if (togglePassword && passwordField) {
+                    togglePassword.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+                        passwordField.setAttribute('type', type);
+                        togglePassword.textContent = type === 'password' ? '👁️' : '👁️‍🗨️';
+                    });
+                }
 
-        <main id="content" class="content">
-            <div class="placeholder">
-                <p>🔄 Memuat...</p>
-            </div>
-        </main>
+                const loginForm = document.getElementById('loginForm');
+                if (loginForm) {
+                    loginForm.onsubmit = async (e) => {
+                        e.preventDefault();
+                        await performLogin(
+                            document.getElementById('username').value,
+                            document.getElementById('password').value
+                        );
+                    };
+                }
+            });
 
-        <!-- BOTTOM NAV -->
-
-        <nav class="bottom-nav">
-            <button class="bottom-item" data-page="broadcast">📣</button>
-
-            <button class="bottom-item" data-page="products">📂</button>
-
-            <button class="bottom-item active" data-page="home">🏠</button>
-
-            <button class="bottom-item" data-page="orders">📦</button>
-
-            <button class="bottom-item" data-page="settings">⚙️</button>
-        </nav>
+            // Cek status saat load
+            fetch('/api/orders/masuk').then(res => {
+                if(res.status === 401) {
+                    document.getElementById('loginPage').style.display = 'flex';
+                } else {
+                    document.getElementById('mainApp').style.display = 'block';
+                }
+            });
+        </script>
         <script src="/static/js/app.js"></script>
+
         <script src="/static/js/home.js"></script>
         <script src="/static/js/orders.js"></script>
         <script src="/static/js/products.js"></script>
