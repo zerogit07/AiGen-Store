@@ -244,6 +244,54 @@ Batal
 };
 
 /* =========================
+SEARCHABLE DROPDOWN
+========================= */
+
+window.showSearchableDropdown = function (selectElement) {
+    const options = Array.from(selectElement.options).map(o => ({ value: o.value, label: o.text, selected: o.selected }));
+    
+    let overlay = document.createElement("div");
+    overlay.className = "dropdown-overlay";
+    overlay.innerHTML = `
+        <div class="dropdown-modal">
+            <input type="text" class="dropdown-search" placeholder="🔍 Cari...">
+            <div class="dropdown-options"></div>
+        </div>`;
+    document.body.appendChild(overlay);
+
+    const container = overlay.querySelector(".dropdown-options");
+    const search = overlay.querySelector(".dropdown-search");
+
+    const render = (filter = "") => {
+        container.innerHTML = "";
+        options.forEach(o => {
+            if (o.label.toLowerCase().includes(filter.toLowerCase())) {
+                let div = document.createElement("div");
+                div.className = "dropdown-option" + (o.selected ? " selected" : "");
+                div.textContent = o.label;
+                div.onclick = () => {
+                    selectElement.value = o.value;
+                    // Trigger change event agar event listener pada select asli berjalan
+                    selectElement.dispatchEvent(
+                        new Event('change', { bubbles: true })
+                    );
+                    console.log('[DEBUG] change triggered:', selectElement.value);
+                    overlay.classList.remove("active");
+                    setTimeout(() => overlay.remove(), 300);
+                };
+                container.appendChild(div);
+            }
+        });
+    };
+
+    search.oninput = (e) => render(e.target.value);
+    overlay.onclick = (e) => { if (e.target === overlay) { overlay.classList.remove("active"); setTimeout(() => overlay.remove(), 300); } };
+    
+    render();
+    setTimeout(() => overlay.classList.add("active"), 10);
+};
+
+/* =========================
 PROFILE
 ========================= */
 

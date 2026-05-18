@@ -18,11 +18,13 @@ BUTTON_WIDTH = 5
 
 def get_subcategory_keyboard(subcategories, page, total_pages, offset, category_id):
     buttons = []
-    for i, (sub_id, _, _) in enumerate(subcategories, start=offset + 1):
+    # Tombol angka 1-10 (offset + i)
+    for i in range(1, len(subcategories) + 1):
+        actual_index = offset + i
         buttons.append(
             InlineKeyboardButton(
-                text=pad_center(str(i), BUTTON_WIDTH),
-                callback_data=f"sub_{sub_id}",  # aman untuk string "10.1"
+                text=pad_center(str(actual_index), BUTTON_WIDTH),
+                callback_data=f"sub_{actual_index}", 
             )
         )
     rows = [buttons[i : i + BUTTON_COLS] for i in range(0, len(buttons), BUTTON_COLS)]
@@ -87,7 +89,7 @@ async def show_subcategories_by_edit(
         )
 
     await state.update_data(
-        selected_category_id=category_id, subs=subs, selected_category_name=cat_name
+        selected_category_id=category_id, subs=subs, selected_category_name=cat_name, page=page, offset=offset
     )
 
 
@@ -104,40 +106,36 @@ async def sub_page(callback: CallbackQuery, state: FSMContext):
 # Handler pilih subkategori (angka)
 @router.callback_query(UserState.selecting_subcategory, F.data.startswith("sub_"))
 async def select_subcategory(callback: CallbackQuery, state: FSMContext):
-    await callback.answer()
-    sub_id_str = callback.data.split("_", 1)[1]
-    try:
-        sub_id = int(sub_id_str)
-    except ValueError:
-        sub_id = sub_id_str  # misal "10.1"
-
+    index = int(callback.data.split("_")[1])
     data = await state.get_data()
     subs = data.get("subs", [])
-    sub_name = next(
-        (name for sid, name, _ in subs if str(sid) == str(sub_id)), "Produk"
-    )
+    offset = data.get("offset", 0)
+    
+    pos = index - offset - 1
+    if 0 <= pos < len(subs):
+        sub_id = subs[pos][0]
+        sub_name = subs[pos][1]
+        
+        price, stock = await get_subcategory_price_and_stock(sub_id)
+        await state.update_data(
+            selected_subcategory_id=sub_id,
+            selected_sub_name=sub_name,
+            price=price,
+            stock=stock,
+            qty=1,
+        )
 
-    price, stock = await get_subcategory_price_and_stock(sub_id)
-    await state.update_data(
-        selected_subcategory_id=sub_id,
-        selected_sub_name=sub_name,
-        price=price,
-        stock=stock,
-        qty=1,
-    )
+        from source.handlers.user.p3_input import send_quantity_message
+        await send_quantity_message(callback.message, state)
 
-    # Panggil P3
-    from source.handlers.user.p3_input import send_quantity_message
-
-    await send_quantity_message(callback.message, state)
-
-    # Hapus pesan subkategori
-    try:
-        await callback.message.delete()
-    except Exception as e:
-        print(f"Gagal hapus pesan: {e}")
-
-    await state.set_state(UserState.input_quantity)
+        try:
+            await callback.message.delete()
+        except:
+            pass
+        await state.set_state(UserState.input_quantity)
+    else:
+        await callback.answer("Subkategori tidak ditemukan.", show_alert=True)
+    await callback.answer()
 
 
 # Tombol kembali ke kategori

@@ -24,7 +24,7 @@ logger = logging.getLogger("web_runner")
 shutdown_event = asyncio.Event()
 
 
-def handle_signal(sig, frame):
+def handle_signal():
     logger.info("🛑 Sinyal shutdown diterima, menutup server...")
     shutdown_event.set()
 

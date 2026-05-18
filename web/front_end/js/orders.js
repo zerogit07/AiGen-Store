@@ -33,13 +33,18 @@ async function renderOrders(page = 1) {
 }
 
 function renderFilterDropdown() {
+    const selectHtml = `
+        <select id="historyFilter" class="form-select" onchange="changeHistoryFilter(this.value)" style="display:none;">
+            <option value="" ${currentFilter === "" ? "selected" : ""}>Semua</option>
+            <option value="approved" ${currentFilter === "approved" ? "selected" : ""}>Disetujui</option>
+            <option value="rejected" ${currentFilter === "rejected" ? "selected" : ""}>Ditolak</option>
+        </select>
+    `;
+    const label = currentFilter === 'approved' ? 'Disetujui' : (currentFilter === 'rejected' ? 'Ditolak' : 'Semua');
     return `
-        <div class="form-group">
-            <select id="historyFilter" class="form-select" onchange="changeHistoryFilter(this.value)">
-                <option value="" ${currentFilter === "" ? "selected" : ""}>Semua</option>
-                <option value="approved" ${currentFilter === "approved" ? "selected" : ""}>Disetujui</option>
-                <option value="rejected" ${currentFilter === "rejected" ? "selected" : ""}>Ditolak</option>
-            </select>
+        <div class="form-group" onclick="window.showSearchableDropdown(document.getElementById('historyFilter'))">
+            <div class="form-input" style="cursor:pointer;">${label} ▼</div>
+            ${selectHtml}
         </div>`;
 }
 

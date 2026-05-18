@@ -131,11 +131,13 @@
         if (!name) return showToast('Nama tidak boleh kosong.', 'error');
         const formData = new FormData();
         formData.append('name', name);
+        console.log("[CRUD DEBUG] Creating category", { name });
         const res = await fetch('/api/products/categories', { method: 'POST', body: formData });
         const data = await res.json();
+        console.log("[CRUD DEBUG] Create response", data);
         showToast(data.message, data.success ? 'success' : 'error');
         closeModal();
-        if (data.success) renderCategories(currentProductPage);
+        if (data.success) window.renderCategories(currentProductPage);
     };
 
     window.updateCategory = async function (id) {
@@ -143,25 +145,25 @@
         if (!name) return showToast('Nama tidak boleh kosong.', 'error');
         const formData = new FormData();
         formData.append('name', name);
+        console.log("[CRUD DEBUG] Updating category", { id, name });
         const res = await fetch(`/api/products/categories/${id}`, { method: 'PUT', body: formData });
         const data = await res.json();
+        console.log("[CRUD DEBUG] Update response", data);
         showToast(data.message, data.success ? 'success' : 'error');
         closeModal();
-        if (data.success) renderCategories(currentProductPage);
-    };
-
-    window.editCategory = function (id, name) {
-        showCategoryModal(id, name);
+        if (data.success) window.renderCategories(currentProductPage);
     };
 
     window.deleteCategory = function (id) {
         window.showConfirmModal(
             'Yakin hapus kategori ini? Semua subkategori dan item akan ikut terhapus.',
             async () => {
+                console.log("[CRUD DEBUG] Deleting category", { id });
                 const res = await fetch(`/api/products/categories/${id}`, { method: 'DELETE' });
                 const data = await res.json();
+                console.log("[CRUD DEBUG] Delete response", data);
                 showToast(data.message, data.success ? 'success' : 'error');
-                if (data.success) renderCategories(currentProductPage);
+                if (data.success) window.renderCategories(currentProductPage);
             }
         );
     };
@@ -171,46 +173,91 @@
         currentProductPage = page;
         const catsRes = await fetch('/api/products/categories?limit=100');
         const cats = await catsRes.json();
-        let html = '<div class="form-group"><label>Pilih Kategori</label><select id="catSelect" class="form-select">';
-        html += '<option value="">-- Pilih --</option>';
-        cats.data.forEach(c => {
-            html += `<option value="${c.id}" ${selectedCatId == c.id ? 'selected' : ''}>${c.name}</option>`;
-        });
-        html += '</select></div><div id="subList"></div>';
-        content.innerHTML = html;
-        document.getElementById('catSelect').addEventListener('change', async (e) => {
-            const catId = e.target.value;
-            if (catId) await renderSubcategories(catId, 1);
+        
+        let selectHtml = `<select id="catSelect" class="form-select" onchange="
+            const catId = this.value;
+            console.log('Category selected:', catId);
+            document.getElementById('catLabel').textContent = this.options[this.selectedIndex].text;
+            if(catId) window.renderSubcategories(catId, 1);
             else document.getElementById('subList').innerHTML = '';
+        " style="display:none;">`;
+        selectHtml += '<option value="">-- Pilih --</option>';
+        cats.data.forEach(c => {
+            selectHtml += `<option value="${c.id}" ${selectedCatId == c.id ? 'selected' : ''}>${c.name}</option>`;
         });
-        if (selectedCatId) await renderSubcategories(selectedCatId, page);
+        selectHtml += '</select>';
+        
+        const currentCat = cats.data.find(c => c.id == selectedCatId);
+        const label = currentCat ? currentCat.name : '-- Pilih Kategori --';
+
+        let html = `
+        <div class="form-group" onclick="window.showSearchableDropdown(document.getElementById('catSelect'))">
+            <label>Pilih Kategori</label>
+            <div class="form-input" style="cursor:pointer;" id="catLabel">${label}</div>
+            ${selectHtml}
+        </div>
+        <div id="subList"></div>`;
+        content.innerHTML = html;
+        if (selectedCatId) await window.renderSubcategories(selectedCatId, page);
     };
 
-    async function renderSubcategories(catId, page) {
-        const [subRes, sumData] = await Promise.all([
-            fetch(`/api/products/subcategories?category_id=${catId}&page=${page}&limit=${itemsPerPage}`).then(r => r.json()),
-            fetchSummary('subkategori', `&category_id=${catId}`)
-        ]);
+    window.renderSubcategories = async function(catId, page) {
+        console.log(`[DEBUG] Rendering subcategories for catId: ${catId}, page: ${page}`);
+        
         const subList = document.getElementById('subList');
-        let html = renderSummaryGrid(sumData, 'subkategori');
-        html += '<button class="btn btn-primary btn-full" onclick="window.showSubcategoryModal(' + catId + ')">➕ Tambah Subkategori</button>';
-        const start = (page - 1) * itemsPerPage;
+        if (subList) {
+            subList.innerHTML = '<div class="placeholder"><p>⏳ Memuat data...</p></div>';
+        }
 
-        subRes.data.forEach((s, index) => {
-            html += `
-                <div class="list-row">
-                    <span class="list-row-label">
-                        ${start + index + 1}. ${s.name} (Rp${s.price})
-                    </span>
-                    <div class="list-row-actions">
-                        <button class="btn-icon" onclick="window.editSubcategory(${s.id}, ${catId}, '${s.name}', ${s.price_raw})">✏️</button>
-                        <button class="btn-icon" onclick="window.deleteSubcategory(${s.id})">🗑️</button>
-                    </div>
-                </div>`;
-        });
-        html += paginationControls(page, subRes.total, `window.renderSubcategoriesPage`);
-        window.renderSubcategoriesPage = function (p) { renderSubcategories(catId, p); };
-        subList.innerHTML = html;
+        try {
+            const response = await fetch(`/api/products/subcategories?category_id=${catId}&page=${page}&limit=${itemsPerPage}`);
+            
+            if (response.status === 401) {
+                showToast('Sesi habis, silakan login ulang.', 'error');
+                console.error('[AUTH ERROR] Unauthorized access.');
+                return;
+            }
+
+            const subRes = await response.json();
+            const sumData = await fetchSummary('subkategori', `&category_id=${catId}`);
+            
+            console.log('[DEBUG] API Response:', subRes);
+            
+            if (!subList) return;
+            
+            let html = renderSummaryGrid(sumData, 'subkategori');
+            html += `<button class="btn btn-primary btn-full" onclick="window.showSubcategoryModal(${catId})">➕ Tambah Subkategori</button>`;
+            
+            if (!subRes.data || subRes.data.length === 0) {
+                html += '<div class="placeholder"><p>📭 Belum ada subkategori.</p></div>';
+            } else {
+                html += '<div id="subListContent">';
+                const start = (page - 1) * itemsPerPage;
+
+                subRes.data.forEach((s, index) => {
+                    html += `
+                        <div class="list-row">
+                            <span class="list-row-label">
+                                ${start + index + 1}. ${s.name} (Rp${s.price})
+                            </span>
+                            <div class="list-row-actions">
+                                <button class="btn-icon" onclick="window.editSubcategory(${s.id}, ${catId}, '${s.name}', ${s.price_raw})">✏️</button>
+                                <button class="btn-icon" onclick="window.deleteSubcategory(${s.id})">🗑️</button>
+                            </div>
+                        </div>`;
+                });
+                html += '</div>';
+                html += paginationControls(page, subRes.total, `window.renderSubcategoriesPage`);
+            }
+            
+            window.renderSubcategoriesPage = function (p) { window.renderSubcategories(catId, p); };
+            subList.innerHTML = html;
+        } catch (e) {
+            console.error('[ERROR] Error rendering subcategories:', e);
+            if (subList) {
+                subList.innerHTML = '<div class="placeholder"><p>❌ Gagal memuat subkategori.</p></div>';
+            }
+        }
     };
 
     window.showSubcategoryModal = function (catId, subId = null, oldName = '', oldPrice = '') {
@@ -246,11 +293,15 @@
         formData.append('category_id', catId);
         formData.append('name', name);
         formData.append('price', price);
+        
+        console.log("[CRUD DEBUG] Creating subcategory", { catId, name, price });
         const res = await fetch('/api/products/subcategories', { method: 'POST', body: formData });
         const data = await res.json();
+        
+        console.log("[CRUD DEBUG] Create response", data);
         showToast(data.message, data.success ? 'success' : 'error');
         closeModal();
-        if (data.success) renderSubcategories(catId, currentProductPage);
+        if (data.success) window.renderSubcategories(catId, currentProductPage);
     };
 
     window.updateSubcategory = async function (subId) {
@@ -295,18 +346,40 @@
         currentProductPage = page;
         const catsRes = await fetch('/api/products/categories?limit=100');
         const cats = await catsRes.json();
-        let html = '<div class="form-group"><label>Kategori</label><select id="itemCatSelect" class="form-select">';
-        html += '<option value="">-- Pilih --</option>';
-        cats.data.forEach(c => { html += `<option value="${c.id}">${c.name}</option>`; });
-        html += '</select></div><div class="form-group"><label>Subkategori</label><select id="itemSubSelect" class="form-select" disabled>';
-        html += '<option value="">-- Pilih kategori dulu --</option></select></div><div id="itemList"></div>';
+        
+        let catSelectHtml = `<select id="itemCatSelect" class="form-select" style="display:none;">`;
+        catSelectHtml += '<option value="">-- Pilih --</option>';
+        cats.data.forEach(c => { catSelectHtml += `<option value="${c.id}">${c.name}</option>`; });
+        catSelectHtml += '</select>';
+
+        let html = `
+        <div class="form-group" onclick="window.showSearchableDropdown(document.getElementById('itemCatSelect'))">
+            <label>Kategori</label>
+            <div class="form-input" style="cursor:pointer;" id="catLabel">-- Pilih Kategori --</div>
+            ${catSelectHtml}
+        </div>
+        <div class="form-group" onclick="if(!document.getElementById('itemSubSelect').disabled) window.showSearchableDropdown(document.getElementById('itemSubSelect'))">
+            <label>Subkategori</label>
+            <div class="form-input" style="cursor:pointer;" id="subLabel">-- Pilih kategori dulu --</div>
+            <select id="itemSubSelect" class="form-select" disabled style="display:none;">
+                <option value="">-- Pilih kategori dulu --</option>
+            </select>
+        </div>
+        <div id="itemList"></div>`;
         content.innerHTML = html;
+
         document.getElementById('itemCatSelect').addEventListener('change', async (e) => {
             const catId = e.target.value;
             const subSelect = document.getElementById('itemSubSelect');
+            const catLabel = document.getElementById('catLabel');
+            const subLabel = document.getElementById('subLabel');
+            
+            catLabel.textContent = e.target.options[e.target.selectedIndex].text;
+            
             if (!catId) {
                 subSelect.innerHTML = '<option value="">-- Pilih kategori dulu --</option>';
                 subSelect.disabled = true;
+                subLabel.textContent = '-- Pilih kategori dulu --';
                 document.getElementById('itemList').innerHTML = '';
                 return;
             }
@@ -315,9 +388,13 @@
             subSelect.innerHTML = '<option value="">-- Pilih --</option>';
             subs.data.forEach(s => { subSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`; });
             subSelect.disabled = false;
+            subLabel.textContent = '-- Pilih Subkategori --';
         });
+
         document.getElementById('itemSubSelect').addEventListener('change', async (e) => {
             const subId = e.target.value;
+            const subLabel = document.getElementById('subLabel');
+            subLabel.textContent = e.target.options[e.target.selectedIndex].text;
             currentSubId = subId;
             if (subId) await renderItems(subId, 1);
             else document.getElementById('itemList').innerHTML = '';
