@@ -4,7 +4,7 @@
 
 /* ---------- FORM ---------- */
 .form-group {
-    margin-bottom: 12px;
+    margin-bottom: 16px;
 }
 
 .form-group label {
@@ -53,6 +53,8 @@
     font-family: inherit;
     resize: vertical;
     outline: none;
+    min-height: 100px;
+    max-height: 30vh;
 }
 
 .list-title {
@@ -115,7 +117,8 @@
 .btn-row {
     display: flex;
     gap: 8px;
-    margin-bottom: 12px;
+    margin-top: 20px;
+    padding-bottom: 20px;
 }
 
 .btn-row .btn {

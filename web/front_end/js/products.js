@@ -88,15 +88,28 @@
 
     window.renderCategories = renderCategories;
 
+    function setupKeyboardAware(modalElement) {
+        const inputs = modalElement.querySelectorAll('input, textarea');
+        inputs.forEach(input => {
+            input.addEventListener('focus', () => {
+                setTimeout(() => {
+                    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300);
+            });
+        });
+    }
+
     window.showCategoryModal = function (id = null, oldName = '') {
         const title = id ? 'Edit Kategori' : 'Tambah Kategori';
         const action = id ? `window.updateCategory(${id})` : 'window.createCategory()';
         const html = `
             <div class="modal-overlay show" id="modalOverlay">
                 <div class="modal">
-                    <p>${title}</p>
-                    <div class="form-group">
-                        <input type="text" id="modalInput" class="form-input" value="${oldName}" placeholder="Nama kategori">
+                    <div class="form-wrapper" style="overflow-y:auto; flex: 1;">
+                        <p>${title}</p>
+                        <div class="form-group">
+                            <input type="text" id="modalInput" class="form-input" value="${oldName}" placeholder="Nama kategori">
+                        </div>
                     </div>
                     <div class="modal-actions">
                         <button class="btn btn-primary" onclick="${action}">Simpan</button>
@@ -105,6 +118,7 @@
                 </div>
             </div>`;
         document.body.insertAdjacentHTML('beforeend', html);
+        setupKeyboardAware(document.getElementById('modalOverlay'));
     };
 
     window.closeModal = function () {
@@ -205,12 +219,14 @@
         const html = `
             <div class="modal-overlay show" id="modalOverlay">
                 <div class="modal">
-                    <p>${title}</p>
-                    <div class="form-group">
-                        <input type="text" id="modalName" class="form-input" value="${oldName}" placeholder="Nama">
-                    </div>
-                    <div class="form-group">
-                        <input type="number" id="modalPrice" class="form-input" value="${oldPrice}" placeholder="Harga">
+                    <div class="form-wrapper" style="overflow-y:auto; flex: 1;">
+                        <p>${title}</p>
+                        <div class="form-group">
+                            <input type="text" id="modalName" class="form-input" value="${oldName}" placeholder="Nama">
+                        </div>
+                        <div class="form-group">
+                            <input type="number" id="modalPrice" class="form-input" value="${oldPrice}" placeholder="Harga">
+                        </div>
                     </div>
                     <div class="modal-actions">
                         <button class="btn btn-primary" onclick="${action}">Simpan</button>
@@ -219,6 +235,7 @@
                 </div>
             </div>`;
         document.body.insertAdjacentHTML('beforeend', html);
+        setupKeyboardAware(document.getElementById('modalOverlay'));
     };
 
     window.createSubcategory = async function (catId) {
@@ -347,9 +364,11 @@
         const html = `
             <div class="modal-overlay show" id="modalOverlay">
                 <div class="modal">
-                    <p>${title}</p>
-                    <div class="form-group">
-                        <textarea id="modalCode" class="form-textarea" rows="5" placeholder="Masukkan kode (satu per baris)">${oldCode}</textarea>
+                    <div class="form-wrapper" style="overflow-y:auto; flex: 1;">
+                        <p>${title}</p>
+                        <div class="form-group">
+                            <textarea id="modalCode" class="form-textarea" rows="5" placeholder="Masukkan kode (satu per baris)">${oldCode}</textarea>
+                        </div>
                     </div>
                     <div class="modal-actions">
                         <button class="btn btn-primary" onclick="${action}">Simpan</button>
@@ -358,6 +377,7 @@
                 </div>
             </div>`;
         document.body.insertAdjacentHTML('beforeend', html);
+        setupKeyboardAware(document.getElementById('modalOverlay'));
     };
 
     window.createItem = async function (subId) {

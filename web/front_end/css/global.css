@@ -333,56 +333,48 @@ body {
 
 .modal-overlay {
     position: fixed;
-
     inset: 0;
-
-    background: rgba(0, 0, 0, 0.5);
-
+    background: rgba(0, 0, 0, 0.7);
     display: flex;
-
     justify-content: center;
-
     align-items: center;
-
+    min-height: 100dvh;
+    padding: 10px;
     opacity: 0;
-
     pointer-events: none;
-
-    z-index: 999;
+    z-index: 9999;
+    transition: opacity 0.3s ease;
 }
 
 .modal-overlay.show {
     opacity: 1;
-
     pointer-events: auto;
 }
 
 .modal {
-    width: 90%;
-
-    max-width: 320px;
-
+    width: 100%;
+    max-width: 400px;
+    max-height: 90dvh;
     background: var(--bg-card);
-
     border: 1px solid var(--border);
-
     border-radius: var(--radius-md);
-
     padding: 20px;
-
-    text-align: center;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    position: relative;
 }
 
 .modal p {
     margin-bottom: 16px;
-
     color: var(--text-secondary);
 }
 
 .modal-actions {
     display: flex;
-
     gap: 10px;
+    margin-top: auto;
+    padding-top: 15px;
 }
 
 /* ---------- BOTTOM NAV ---------- */
@@ -435,19 +427,16 @@ body {
     background: var(--border);
 }
 
-/* ---------- UTILITY ---------- */
+/* ---------- FORM UTILITY ---------- */
 
-.notif-badge {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    background: var(--red);
-    color: white;
-    font-size: 0.65rem;
-    font-weight: bold;
-    padding: 2px 5px;
-    border-radius: 10px;
-    min-width: 16px;
-    text-align: center;
-    line-height: 1;
+form input, form select, form textarea {
+    width: 100%;
+    max-width: 100%;
+    min-height: 44px;
+    padding: 10px;
+    margin-bottom: 10px;
+    background: var(--bg-header);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
 }
