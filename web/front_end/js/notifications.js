@@ -1,6 +1,6 @@
 // web/front_end/js/notifications.js
 
-async function loadNotificationPage() {
+async function loadNotificationsPage() {
     try {
         const res = await fetch("/api/notifications");
         const data = await res.json();
@@ -16,10 +16,10 @@ async function loadNotificationPage() {
             data.forEach(n => {
                 // Tampilkan ID Pesanan dan User ID jika tipe notifikasi adalah order
                 let messageDisplay = n.message || "";
-                if (n.type === 'order') {
+                if (n.type === "order") {
                     // Mengasumsikan n.message adalah "#<order_id>"
                     // Jika ada data user_id yang tersedia, kita bisa gunakan di sini
-                    messageDisplay = `ID Pesanan: ${n.message.replace('#', '')}`;
+                    messageDisplay = `ID Pesanan: ${n.message.replace("#", "")}`;
                 }
 
                 html += `
@@ -105,18 +105,6 @@ document.addEventListener("DOMContentLoaded", () => {
     loadNotificationBadge();
 
     setInterval(loadNotificationBadge, 10000);
-
-    const notifButton = document.getElementById("notifBtn");
-
-    if (notifButton) {
-        notifButton.addEventListener("click", () => {
-            pageTitle.textContent = "🔔 Notifikasi";
-
-            tabBar.classList.add("hidden");
-
-            loadNotificationPage();
-        });
-    }
 });
 
 function formatNotifTime(dateString) {

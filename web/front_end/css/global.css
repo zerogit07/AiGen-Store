@@ -144,6 +144,10 @@ body {
 .tab-bar {
     display: flex;
 
+    justify-content: center;
+
+    align-items: center;
+
     overflow-x: auto;
 
     height: var(--tab-height);
@@ -153,6 +157,8 @@ body {
     border-bottom: 1px solid var(--border);
 
     scrollbar-width: none;
+
+    gap: 8px;
 }
 
 .tab-bar::-webkit-scrollbar {
@@ -166,11 +172,15 @@ body {
 
     color: var(--text-secondary);
 
-    padding: 10px 16px;
+    padding: 10px 18px;
 
     white-space: nowrap;
 
     border-bottom: 2px solid transparent;
+
+    flex: 0;
+
+    min-width: fit-content;
 }
 
 .tab-btn.active {
@@ -429,7 +439,9 @@ body {
 
 /* ---------- FORM UTILITY ---------- */
 
-form input, form select, form textarea {
+form input,
+form select,
+form textarea {
     width: 100%;
     max-width: 100%;
     min-height: 44px;
@@ -502,4 +514,3 @@ form input, form select, form textarea {
     color: var(--accent);
     font-weight: bold;
 }
-

@@ -21,7 +21,8 @@ function updatePageTitle(page) {
         orders: "📦 Pesanan",
         broadcast: "📣 Broadcast",
         settings: "⚙️ Pengaturan",
-        profile: "👤 Profil"
+        profile: "👤 Profil",
+        notifications: "🔔 Notifikasi"
     };
 
     pageTitle.textContent = titles[page] || page;
@@ -42,6 +43,9 @@ function updateTabBar(page, tabs) {
     tabBar.classList.remove("hidden");
 
     const labels = {
+        user: "User",
+        statistik: "Statistik",
+        laporan: "Laporan",
         kategori: "Kategori",
         subkategori: "Subkategori",
         item: "Item",
@@ -61,7 +65,10 @@ function updateTabBar(page, tabs) {
         btn.className = "tab-btn";
         btn.textContent = labels[tab] || tab;
 
-        if (index === 0) {
+        if (
+            (page === "home" && tab === "statistik") ||
+            (page !== "home" && index === 0)
+        ) {
             btn.classList.add("active");
             currentTab = tab;
         }
@@ -92,21 +99,23 @@ async function loadPageContent(page, tab = "") {
 
     try {
         if (page === "home") {
-            await loadHomePage();
-        } else if (page === "products") {
-            await loadProductsPage(tab);
-        } else if (page === "orders") {
-            await loadOrdersPage(tab);
-        } else if (page === "broadcast") {
-            await loadBroadcastPage();
-        } else if (page === "settings") {
-            await loadSettingsPage(tab);
-        } else {
-            content.innerHTML = `
-            <div class="placeholder">
-                Halaman belum tersedia
-            </div>`;
-        }
+    await loadHomePage(tab || "statistik");
+} else if (page === "products") {
+    await loadProductsPage(tab);
+} else if (page === "orders") {
+    await loadOrdersPage(tab);
+} else if (page === "broadcast") {
+    await loadBroadcastPage();
+} else if (page === "settings") {
+    await loadSettingsPage(tab);
+} else if (page === "notifications") {
+    await loadNotificationsPage();
+} else {
+    content.innerHTML = `
+    <div class="placeholder">
+        Halaman belum tersedia
+    </div>`;
+}
     } catch (e) {
         console.log(e);
 
@@ -122,7 +131,7 @@ async function loadPageContent(page, tab = "") {
 ========================= */
 
 const navConfig = {
-    home: "",
+    home: "user,statistik,laporan",
     products: "kategori,subkategori,item,data",
     orders: "masuk,pending,riwayat",
     broadcast: "",
@@ -145,7 +154,11 @@ $$(".bottom-item").forEach(btn => {
 
         loadPageContent(
             page,
-            navConfig[page] ? navConfig[page].split(",")[0] : ""
+            page === "home"
+                ? "statistik"
+                : navConfig[page]
+                  ? navConfig[page].split(",")[0]
+                  : ""
         );
     };
 });
@@ -248,8 +261,12 @@ SEARCHABLE DROPDOWN
 ========================= */
 
 window.showSearchableDropdown = function (selectElement) {
-    const options = Array.from(selectElement.options).map(o => ({ value: o.value, label: o.text, selected: o.selected }));
-    
+    const options = Array.from(selectElement.options).map(o => ({
+        value: o.value,
+        label: o.text,
+        selected: o.selected
+    }));
+
     let overlay = document.createElement("div");
     overlay.className = "dropdown-overlay";
     overlay.innerHTML = `
@@ -267,15 +284,19 @@ window.showSearchableDropdown = function (selectElement) {
         options.forEach(o => {
             if (o.label.toLowerCase().includes(filter.toLowerCase())) {
                 let div = document.createElement("div");
-                div.className = "dropdown-option" + (o.selected ? " selected" : "");
+                div.className =
+                    "dropdown-option" + (o.selected ? " selected" : "");
                 div.textContent = o.label;
                 div.onclick = () => {
                     selectElement.value = o.value;
                     // Trigger change event agar event listener pada select asli berjalan
                     selectElement.dispatchEvent(
-                        new Event('change', { bubbles: true })
+                        new Event("change", { bubbles: true })
                     );
-                    console.log('[DEBUG] change triggered:', selectElement.value);
+                    console.log(
+                        "[DEBUG] change triggered:",
+                        selectElement.value
+                    );
                     overlay.classList.remove("active");
                     setTimeout(() => overlay.remove(), 300);
                 };
@@ -284,9 +305,14 @@ window.showSearchableDropdown = function (selectElement) {
         });
     };
 
-    search.oninput = (e) => render(e.target.value);
-    overlay.onclick = (e) => { if (e.target === overlay) { overlay.classList.remove("active"); setTimeout(() => overlay.remove(), 300); } };
-    
+    search.oninput = e => render(e.target.value);
+    overlay.onclick = e => {
+        if (e.target === overlay) {
+            overlay.classList.remove("active");
+            setTimeout(() => overlay.remove(), 300);
+        }
+    };
+
     render();
     setTimeout(() => overlay.classList.add("active"), 10);
 };
@@ -296,8 +322,11 @@ PROFILE
 ========================= */
 
 $("#profileBtn").onclick = () => {
+    currentPage = "profile";
+
     updatePageTitle("profile");
 
+    tabBar.innerHTML = "";
     tabBar.classList.add("hidden");
 
     loadProfilePage();
@@ -307,8 +336,16 @@ $("#profileBtn").onclick = () => {
 NOTIF
 ========================= */
 
-// Handler notif dipindah ke notifications.js
-// Jangan isi onclick di sini
+$("#notifBtn").onclick = () => {
+    currentPage = "notifications";
+
+    updatePageTitle("notifications");
+
+    tabBar.innerHTML = "";
+    tabBar.classList.add("hidden");
+
+    loadNotificationsPage();
+};
 
 /* =========================
 INIT
@@ -317,7 +354,7 @@ INIT
 document.addEventListener("DOMContentLoaded", () => {
     updatePageTitle("home");
 
-    updateTabBar("home", "");
+    updateTabBar("home", navConfig.home);
 
-    loadPageContent("home");
+    loadPageContent("home", "statistik");
 });

@@ -52,16 +52,41 @@ async def delete_category(cat_id: int) -> bool:
 async def delete_category_by_id(category_id: int):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("PRAGMA foreign_keys = ON")
-        # 1. Hapus kategori
-        await db.execute("DELETE FROM categories WHERE id = ?", (category_id,))
-        # 2. Hapus subkategori tak bertuan
+
+        # hapus order terkait item kategori
+        await db.execute("""
+            DELETE FROM orders
+            WHERE item_id IN (
+                SELECT i.id
+                FROM items i
+                JOIN subcategories s
+                ON i.subcategory_id=s.id
+                WHERE s.category_id=?
+            )
+        """,(category_id,))
+
+        # hapus item
+        await db.execute("""
+            DELETE FROM items
+            WHERE subcategory_id IN (
+                SELECT id
+                FROM subcategories
+                WHERE category_id=?
+            )
+        """,(category_id,))
+
+        # hapus subkategori
         await db.execute(
-            "DELETE FROM subcategories WHERE category_id NOT IN (SELECT id FROM categories)"
+            "DELETE FROM subcategories WHERE category_id=?",
+            (category_id,)
         )
-        # 3. Hapus item tak bertuan
+
+        # hapus kategori
         await db.execute(
-            "DELETE FROM items WHERE subcategory_id NOT IN (SELECT id FROM subcategories)"
+            "DELETE FROM categories WHERE id=?",
+            (category_id,)
         )
+
         await db.commit()
 
 async def get_category_name(cat_id: int):
@@ -164,12 +189,28 @@ async def delete_subcategory(sub_id: int) -> bool:
 async def delete_subcategory_by_id(subcategory_id: int):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("PRAGMA foreign_keys = ON")
-        # 1. Hapus subkategori
-        await db.execute("DELETE FROM subcategories WHERE id = ?", (subcategory_id,))
-        # 2. Hapus item tak bertuan
+
+        # hapus order yang terkait item subkategori ini
+        await db.execute("""
+            DELETE FROM orders
+            WHERE item_id IN (
+                SELECT id FROM items
+                WHERE subcategory_id=?
+            )
+        """,(subcategory_id,))
+
+        # hapus item
         await db.execute(
-            "DELETE FROM items WHERE subcategory_id NOT IN (SELECT id FROM subcategories)"
+            "DELETE FROM items WHERE subcategory_id=?",
+            (subcategory_id,)
         )
+
+        # hapus subkategori
+        await db.execute(
+            "DELETE FROM subcategories WHERE id=?",
+            (subcategory_id,)
+        )
+
         await db.commit()
 
 async def get_subcategory_price_and_stock(subcategory_id: int):
