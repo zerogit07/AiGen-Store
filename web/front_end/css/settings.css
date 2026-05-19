@@ -1,0 +1,42 @@
+/* ==================================================
+   Settings Page
+   ================================================== */
+
+/* Manual Delete */
+.manual-delete-wrap{
+    margin-top:16px;
+    padding-bottom: 40px;
+}
+
+.manual-delete-btn{
+    width:100%;
+    border:none;
+    outline:none;
+
+    background: var(--red);
+    color:#fff;
+
+    padding:12px 16px;
+    border-radius: var(--radius-md);
+
+    font-size:0.95rem;
+    font-weight:600;
+
+    cursor:pointer;
+
+    transition:all .25s ease;
+}
+
+.manual-delete-btn:hover{
+    background:var(--red-hover);
+}
+
+.manual-delete-btn:active{
+    transform:scale(.98);
+}
+
+.manual-delete-empty{
+    text-align:center;
+    padding:24px;
+    color:var(--text-secondary);
+}

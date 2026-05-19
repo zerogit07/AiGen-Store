@@ -1,0 +1,45 @@
+/* web/front_end/css/home.css */
+.home-revenue {
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.card-label-center {
+    font-size: 0.9em;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.card-value-large {
+    font-size: 2em;
+    font-weight: 700;
+    color: var(--accent);
+    text-align: center;
+}
+
+.home-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.home-stats-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.home-stat-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9em;
+    color: var(--text-secondary);
+}
+
+.home-stat-row span:last-child {
+    font-weight: 600;
+    color: var(--text-primary);
+}
