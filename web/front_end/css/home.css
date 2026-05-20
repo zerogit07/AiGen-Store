@@ -1,22 +1,25 @@
-/* web/front_end/css/home.css */
+/* =======================================
+   STATISTIK
+======================================= */
+
 .home-revenue {
     text-align: center;
     margin-bottom: 12px;
 }
 
 .card-label-center {
-    font-size: 0.9em;
-    color: var(--text-secondary);
     text-align: center;
-    margin-bottom: 8px;
+    font-size: 0.95rem;
     font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
 }
 
 .card-value-large {
-    font-size: 2em;
+    text-align: center;
+    font-size: 2rem;
     font-weight: 700;
     color: var(--accent);
-    text-align: center;
 }
 
 .home-grid-2 {
@@ -29,17 +32,364 @@
 .home-stats-list {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
 }
 
 .home-stat-row {
     display: flex;
     justify-content: space-between;
-    font-size: 0.9em;
     color: var(--text-secondary);
+    font-size: 0.9rem;
 }
 
 .home-stat-row span:last-child {
+    color: white;
     font-weight: 600;
-    color: var(--text-primary);
+}
+
+/* =======================================
+   CARD
+======================================= */
+
+.card {
+    overflow: hidden;
+}
+
+/* =======================================
+   SEARCH
+======================================= */
+
+.table-search {
+    width: 100%;
+    height: 34px;
+
+    padding: 0 12px;
+
+    margin-bottom: 8px;
+
+    border: none;
+
+    border-radius: 10px;
+
+    background: var(--card-bg);
+
+    color: white;
+
+    text-align: center;
+
+    font-size: 13px;
+
+    outline: none;
+
+    box-sizing: border-box;
+}
+
+.table-search::placeholder {
+    text-align: center;
+}
+
+/* =======================================
+   TABLE SCROLL
+======================================= */
+
+.table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    margin-top: 8px;
+}
+
+/* =======================================
+   USER
+======================================= */
+
+.user-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.user-table th,
+.user-table td {
+    text-align: center;
+    padding: 12px 8px;
+    vertical-align: middle;
+}
+
+.user-table thead th {
+    color: var(--text-secondary);
+    font-size: 13px;
+
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.user-table tbody td {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.user-table tbody tr {
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.user-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+/* width */
+
+.user-table th:nth-child(1),
+.user-table td:nth-child(1) {
+    width: 50px;
+}
+
+.user-table th:nth-child(2),
+.user-table td:nth-child(2) {
+    width: 90px;
+}
+
+.user-table th:nth-child(3),
+.user-table td:nth-child(3) {
+    width: 110px;
+}
+
+/* =======================================
+   RIWAYAT
+======================================= */
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.history-table th,
+.history-table td {
+    text-align: center;
+    padding: 12px 8px;
+    vertical-align: middle;
+}
+
+.history-table thead th {
+    color: var(--text-secondary);
+    font-size: 13px;
+
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.history-table tbody td {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.history-table tbody tr {
+    transition: 0.2s;
+}
+
+.history-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+/* width */
+
+.history-table th:nth-child(1),
+.history-table td:nth-child(1) {
+    width: 45px;
+}
+
+.history-table th:nth-child(2),
+.history-table td:nth-child(2) {
+    width: 90px;
+}
+
+.history-table th:nth-child(3),
+.history-table td:nth-child(3) {
+    width: 90px;
+}
+
+/* =======================================
+   RINGKASAN
+======================================= */
+
+.summary-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.summary-table td {
+    padding: 14px;
+}
+
+.summary-table tr {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.summary-table td:last-child {
+    text-align: right;
+    color: var(--accent);
+    font-weight: 600;
+}
+
+/* =======================================
+   PRODUK TERLARIS
+======================================= */
+
+.top-product-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.top-product-table th,
+.top-product-table td {
+    text-align: center;
+    padding: 14px;
+}
+
+.top-product-table thead {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.top-product-table tbody tr {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* =======================================
+   BADGE
+======================================= */
+
+.badge {
+    display: inline-block;
+
+    padding: 5px 10px;
+
+    border-radius: 999px;
+
+    font-size: 11px;
+
+    font-weight: 600;
+}
+
+.badge.success {
+    background: rgba(0, 180, 0, 0.18);
+
+    color: #49ff84;
+}
+
+.badge.danger {
+    background: rgba(255, 0, 0, 0.18);
+
+    color: #ff6868;
+}
+
+/* =======================================
+   PAGINATION
+======================================= */
+
+.pagination {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-top: 10px;
+}
+
+.pagination button {
+    padding: 8px 14px;
+
+    border: none;
+
+    border-radius: 10px;
+
+    background: #2b2b2b;
+
+    color: white;
+}
+
+/* =======================================
+   FILTER
+======================================= */
+
+.filter-btn {
+    width: 100%;
+
+    height: 40px;
+
+    border: none;
+
+    border-radius: 12px;
+
+    background: var(--card-bg);
+
+    color: white;
+
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+/* =======================================
+   MODAL
+======================================= */
+
+.home-modal {
+    display: none;
+
+    position: fixed;
+
+    inset: 0;
+
+    background: rgba(0, 0, 0, 0.7);
+
+    z-index: 999;
+}
+
+.home-modal-content {
+    position: absolute;
+
+    top: 50%;
+    left: 50%;
+
+    transform: translate(-50%, -50%);
+
+    width: 90%;
+
+    max-width: 320px;
+
+    background: var(--card-bg);
+
+    border-radius: 18px;
+
+    padding: 20px;
+}
+
+.home-modal-content h3 {
+    text-align: center;
+
+    margin-bottom: 16px;
+}
+
+.home-modal-content p {
+    margin: 12px 0;
+}
+
+.home-modal-content button {
+    width: 100%;
+
+    margin-top: 10px;
+
+    padding: 12px;
+
+    border: none;
+
+    border-radius: 12px;
+
+    background: #343434;
+
+    color: white;
+
+    cursor: pointer;
+
+    transition: .2s;
+}
+
+.home-modal-content button:hover {
+    opacity: .85;
 }

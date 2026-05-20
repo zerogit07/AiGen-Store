@@ -37,7 +37,7 @@ async def main():
     config = uvicorn.Config(
         app="web.web:app",
         host="127.0.0.1",
-        port=8000,
+        port=8080,
         reload=True,
         reload_dirs=["web"],
         log_level="info",
@@ -53,7 +53,7 @@ async def main():
         except NotImplementedError:
             pass  # Windows tidak mendukung
 
-    logger.info("✅ Server berjalan di: http://127.0.0.1:8000")
+    logger.info("✅ Server berjalan di: http://127.0.0.1:8080")
     logger.info("📱 Buka dari browser HP kamu.")
     logger.info("🔄 Hot-reload AKTIF — simpan file untuk restart otomatis.")
     logger.info("⏎  Tekan Ctrl+C untuk berhenti.\n")
