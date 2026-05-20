@@ -121,6 +121,8 @@ async def delete_broadcast_job(job_id: int):
 # home statistik
 async def get_total_revenue_month(month=None):
     async with aiosqlite.connect(DB_PATH) as db:
+        tahun = str(datetime.now().year)
+
         query = """
             SELECT
                 COALESCE(
@@ -134,43 +136,22 @@ async def get_total_revenue_month(month=None):
             AND strftime(
                 '%Y-%m',
                 created_at
-            )=
-            strftime(
-                '%Y-%m',
-                'now'
-            )
+            )=?
         """
 
-        params = ()
-
-        if month:
-            query = """
-                SELECT
-                    COALESCE(
-                        SUM(total_price),
-                        0
-                    )
-
-                FROM orders
-
-                WHERE status='approved'
-                AND strftime(
-                    '%m',
-                    created_at
-                )=?
-            """
-
-            params = (month,)
+        params = (f"{tahun}-{month}",)
 
         cursor = await db.execute(query, params)
 
         result = (await cursor.fetchone())[0]
 
-        return result
+        return result or 0
 
 
 async def get_order_counts_month(month=None):
     async with aiosqlite.connect(DB_PATH) as db:
+        tahun = str(datetime.now().year)
+
         query = """
             SELECT
                 status,
@@ -181,43 +162,24 @@ async def get_order_counts_month(month=None):
             WHERE strftime(
                 '%Y-%m',
                 created_at
-            )=
-            strftime(
-                '%Y-%m',
-                'now'
-            )
+            )=?
 
             GROUP BY status
         """
 
-        params = ()
-
-        if month:
-            query = """
-                SELECT
-                    status,
-                    COUNT(*)
-
-                FROM orders
-
-                WHERE strftime(
-                    '%m',
-                    created_at
-                )=?
-
-                GROUP BY status
-            """
-
-            params = (month,)
+        params = (f"{tahun}-{month}",)
 
         cursor = await db.execute(query, params)
 
         rows = await cursor.fetchall()
 
         return {row[0]: row[1] for row in rows}
-
 async def get_total_items_sold_month(month=None):
     async with aiosqlite.connect(DB_PATH) as db:
+
+        tahun = str(
+            datetime.now().year
+        )
 
         query = """
             SELECT
@@ -229,19 +191,15 @@ async def get_total_items_sold_month(month=None):
             FROM orders
 
             WHERE status='approved'
-        """
-
-        params = ()
-
-        if month:
-            query += """
             AND strftime(
-                '%m',
+                '%Y-%m',
                 created_at
             )=?
-            """
+        """
 
-            params = (month,)
+        params = (
+            f"{tahun}-{month}",
+        )
 
         cursor = await db.execute(
             query,

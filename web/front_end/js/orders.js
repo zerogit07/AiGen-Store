@@ -1,51 +1,82 @@
 // orders.js
 let currentOrdersPage = 1;
 let currentOrdersTab = "masuk";
-let currentFilter = "";
+let currentOrdersFilter = "";
 
 async function loadOrdersPage(tab) {
+    console.log("TAB:", tab);
+
     currentOrdersTab = tab;
+
     currentOrdersPage = 1;
-    currentFilter = "";
+
+    let currentOrdersFilter = "";
+
     await renderOrders();
 }
 
 async function renderOrders(page = 1) {
-    currentOrdersPage = page;
-    let url = `/api/orders/${currentOrdersTab}?page=${page}&limit=10`;
-    if (currentOrdersTab === "riwayat" && currentFilter) {
-        url += `&filter=${currentFilter}`;
-    }
-    const res = await fetch(url);
-    const data = await res.json();
-    const orders = data.data;
-    const total = data.total;
+    try {
+        currentOrdersPage = page;
 
-    let html = "";
-    if (currentOrdersTab === "riwayat") {
-        html += renderFilterDropdown();
+        let url = `/api/orders/${currentOrdersTab}?page=${page}&limit=10`;
+
+        if (currentOrdersTab === "riwayat" && currentOrdersFilter) {
+            url += `&filter=${currentOrdersFilter}`;
+        }
+
+        const res = await fetch(url);
+
+        console.log("URL:", url);
+
+        console.log("STATUS:", res.status);
+
+        const data = await res.json();
+
+        console.log("DATA:", data);
+
+        const orders = data.data || [];
+
+        const total = data.total || 0;
+
+        let html = "";
+
+        if (currentOrdersTab === "riwayat") {
+            html += renderFilterDropdown();
+        }
+
+        html += renderOrderList(orders, total, page);
+
+        if (currentOrdersTab === "masuk" && orders.length > 0) {
+            html += renderBulkActions();
+        }
+
+        content.innerHTML = html;
+    } catch (e) {
+        console.log("ORDER ERROR:", e);
+
+        content.innerHTML = `
+        <div class="card">
+            ❌ Gagal memuat
+        </div>
+        `;
     }
-    html += renderOrderList(orders, total, page);
-    if (currentOrdersTab === "masuk" && orders.length > 0) {
-        html += renderBulkActions();
-    }
-    content.innerHTML = html;
 }
 
 function renderFilterDropdown() {
     const selectHtml = `
         <select id="historyFilter" class="form-select" onchange="changeHistoryFilter(this.value)" style="display:none;">
-            <option value="" ${currentFilter === "" ? "selected" : ""}>Semua</option>
-            <option value="approved" ${currentFilter === "approved" ? "selected" : ""}>Disetujui</option>
-            <option value="rejected" ${currentFilter === "rejected" ? "selected" : ""}>Ditolak</option>
+            <option value="" ${currentOrdersFilter === "" ? "selected" : ""}>Semua</option>
+            <option value="approved" ${currentOrdersFilter === "approved" ? "selected" : ""}>Disetujui</option>
+            <option value="rejected" ${currentOrdersFilter === "rejected" ? "selected" : ""}>Ditolak</option>
         </select>
     `;
     const label =
-    currentFilter === "approved"
-        ? "-- Disetujui --"
-        : currentFilter === "rejected"
-          ? "-- Ditolak --"
-          : "-- Semua --";
+        currentOrdersFilter === "approved"
+            ? "-- Disetujui --"
+            : currentOrdersFilter === "rejected"
+              ? "-- Ditolak --"
+              : "-- Semua --";
     return `
     <div class="form-group"
     onclick="window.showSearchableDropdown(document.getElementById('historyFilter'))">
@@ -59,7 +90,7 @@ function renderFilterDropdown() {
 }
 
 function changeHistoryFilter(filter) {
-    currentFilter = filter;
+    currentOrdersFilter = filter;
     currentOrdersPage = 1;
     renderOrders();
 }
@@ -198,11 +229,11 @@ async function deletePending() {
 
 async function deleteHistory() {
     let url = "/api/orders/history";
-    if (currentFilter) {
-        url += `?filter=${currentFilter}`;
+    if (currentOrdersFilter) {
+        url += `?filter=${currentOrdersFilter}`;
     }
     window.showConfirmModal(
-        `Hapus riwayat (${currentFilter || "semua"})?`,
+        `Hapus riwayat (${currentOrdersFilter || "semua"})?`,
         async () => {
             const res = await fetch(url, { method: "DELETE" });
             const data = await res.json();

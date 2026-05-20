@@ -5,8 +5,7 @@ const $$ = sel => document.querySelectorAll(sel);
 
 const pageTitle = $("#pageTitle");
 const tabBar = $("#tabBar");
-const content = $("#content");
-
+const appContent = $("#content");
 let currentPage = "home";
 let currentTab = "";
 
@@ -92,34 +91,34 @@ function updateTabBar(page, tabs) {
 ========================= */
 
 async function loadPageContent(page, tab = "") {
-    content.innerHTML = `
+    appContent.innerHTML = `
     <div class="placeholder">
         <p>🔄 Memuat...</p>
     </div>`;
 
     try {
         if (page === "home") {
-    await loadHomePage(tab || "statistik");
-} else if (page === "products") {
-    await loadProductsPage(tab);
-} else if (page === "orders") {
-    await loadOrdersPage(tab);
-} else if (page === "broadcast") {
-    await loadBroadcastPage();
-} else if (page === "settings") {
-    await loadSettingsPage(tab);
-} else if (page === "notifications") {
-    await loadNotificationsPage();
-} else {
-    content.innerHTML = `
-    <div class="placeholder">
-        Halaman belum tersedia
-    </div>`;
-}
+            await loadHomePage(tab || "statistik");
+        } else if (page === "products") {
+            await loadProductsPage(tab);
+        } else if (page === "orders") {
+            await loadOrdersPage(tab);
+        } else if (page === "broadcast") {
+            await loadBroadcastPage();
+        } else if (page === "settings") {
+            await loadSettingsPage(tab);
+        } else if (page === "notifications") {
+            await loadNotificationsPage();
+        } else {
+            appContent.innerHTML = `
+            <div class="placeholder">
+                Halaman belum tersedia
+            </div>`;
+        }
     } catch (e) {
         console.log(e);
 
-        content.innerHTML = `
+        appContent.innerHTML = `
         <div class="placeholder">
             ❌ Gagal memuat
         </div>`;
