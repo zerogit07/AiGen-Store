@@ -70,13 +70,13 @@ async def run_web():
     config = uvicorn.Config(
         app=web_app,
         host="127.0.0.1",
-        port=8000,
+        port=3000,
         log_level="info",
         use_colors=False,
         reload=True,
     )
     server = uvicorn.Server(config)
-    logger.info("🌐 Memulai server web di http://127.0.0.1:8000 ...")
+    logger.info("🌐 Memulai server web di http://127.0.0.1:3000 ...")
     try:
         await server.serve()
     except asyncio.CancelledError:

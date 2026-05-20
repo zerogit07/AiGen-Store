@@ -158,18 +158,27 @@ async def change_user_status(user_id: int, status: int):
     return {"success": True}
 
 
-async def get_home_report(page: int = 1, filter_type: str = ""):
+async def get_home_report(
+    page: int = 1,
+    filter_type: str = ""
+):
     limit = 10
     offset = (page - 1) * limit
 
     summary = await get_report_summary()
 
-    products = await get_top_products(3)
+    products = await get_top_products(
+        limit=3,
+        filter_type=filter_type
+    )
 
-    history, total = await get_history(limit, offset, filter_type)
+    history, total = await get_history(
+        limit,
+        offset,
+        filter_type
+    )
 
     total_pages = (total + limit - 1) // limit
-
     return {
         "summary": {
             "pendapatan": format_rupiah(summary[0]),

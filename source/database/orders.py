@@ -231,25 +231,89 @@ async def get_report_summary():
             return await cursor.fetchone()
 
 
-async def get_top_products(limit: int = 10):
+async def get_top_products(
+    limit: int = 10,
+    filter_type: str = ""
+):
     async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("PRAGMA foreign_keys = ON")
+        await db.execute(
+            "PRAGMA foreign_keys = ON"
+        )
+
+        where = ""
+
+        if filter_type == "today":
+            where = """
+            AND DATE(o.created_at)=DATE('now')
+            """
+
+        elif filter_type == "week":
+            where = """
+            AND strftime(
+                '%W',
+                o.created_at
+            )=
+            strftime(
+                '%W',
+                'now'
+            )
+            """
+
+        elif filter_type == "month":
+            where = """
+            AND strftime(
+                '%Y-%m',
+                o.created_at
+            )=
+            strftime(
+                '%Y-%m',
+                'now'
+            )
+            """
+
+        elif filter_type == "year":
+            where = """
+            AND strftime(
+                '%Y',
+                o.created_at
+            )=
+            strftime(
+                '%Y',
+                'now'
+            )
+            """
+
+        query = f"""
+        SELECT
+            s.name,
+            SUM(o.quantity)
+
+        FROM orders o
+
+        JOIN items i
+        ON o.item_id=i.id
+
+        JOIN subcategories s
+        ON i.subcategory_id=s.id
+
+        WHERE
+        o.status='approved'
+
+        {where}
+
+        GROUP BY s.id
+
+        ORDER BY
+        SUM(o.quantity) DESC
+
+        LIMIT ?
+        """
 
         async with db.execute(
-            """
-            SELECT
-                s.name,
-                SUM(o.quantity)
-            FROM orders o
-            JOIN items i ON o.item_id=i.id
-            JOIN subcategories s ON i.subcategory_id=s.id
-            WHERE o.status='approved'
-            GROUP BY s.id
-            ORDER BY SUM(o.quantity) DESC
-            LIMIT ?
-            """,
-            (limit,),
+            query,
+            (limit,)
         ) as cursor:
+
             return await cursor.fetchall()
 
 
