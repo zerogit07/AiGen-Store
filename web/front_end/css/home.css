@@ -4,49 +4,70 @@
 
 .home-revenue {
     text-align: center;
+
     margin-bottom: 12px;
 }
 
 .card-label-center {
     text-align: center;
+
     font-size: 0.95rem;
+
     font-weight: 600;
+
     color: var(--text-secondary);
+
     margin-bottom: 10px;
 }
 
 .card-value-large {
     text-align: center;
+
     font-size: 2rem;
+
     font-weight: 700;
+
     color: var(--accent);
 }
 
 .home-grid-2 {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+
+    grid-template-columns: repeat(2, 1fr);
+
     gap: 10px;
+
     margin-bottom: 12px;
 }
 
-.home-stats-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+.home-grid-2 .summary-table {
+    width: 100%;
+
+    border-collapse: collapse;
 }
 
-.home-stat-row {
-    display: flex;
-    justify-content: space-between;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
+.home-grid-2 .summary-table tr {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.home-stat-row span:last-child {
-    color: white;
+.home-grid-2 .summary-table td {
+    padding: 16px 0;
+}
+
+.home-grid-2 .card {
+    min-height: auto;
+
+    height: auto;
+}
+.home-grid-2 .summary-table td:last-child {
+    text-align: right;
+
+    padding-right: 16px;
+
+    color: var(--accent);
+
     font-weight: 600;
 }
-
 /* =======================================
    CARD
 ======================================= */
@@ -157,6 +178,7 @@
 
 .history-table {
     width: 100%;
+    min-width: 900px;
     border-collapse: collapse;
 }
 
@@ -165,12 +187,12 @@
     text-align: center;
     padding: 12px 8px;
     vertical-align: middle;
+    white-space: nowrap;
 }
 
 .history-table thead th {
     color: var(--text-secondary);
     font-size: 13px;
-
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -201,6 +223,36 @@
 .history-table th:nth-child(3),
 .history-table td:nth-child(3) {
     width: 90px;
+}
+
+.history-table th:nth-child(4),
+.history-table td:nth-child(4) {
+    width: 120px;
+}
+
+.history-table th:nth-child(5),
+.history-table td:nth-child(5) {
+    width: 120px;
+}
+
+.history-table th:nth-child(6),
+.history-table td:nth-child(6) {
+    width: 60px;
+}
+
+.history-table th:nth-child(7),
+.history-table td:nth-child(7) {
+    width: 100px;
+}
+
+.history-table th:nth-child(8),
+.history-table td:nth-child(8) {
+    width: 100px;
+}
+
+.history-table th:nth-child(9),
+.history-table td:nth-child(9) {
+    width: 110px;
 }
 
 /* =======================================
@@ -387,9 +439,129 @@
 
     cursor: pointer;
 
-    transition: .2s;
+    transition: 0.2s;
 }
 
 .home-modal-content button:hover {
-    opacity: .85;
+    opacity: 0.85;
+}
+/* =======================================
+   SEARCH MODAL
+======================================= */
+
+.search-modal-input {
+    width: 100%;
+
+    height: 44px;
+
+    padding: 0 14px;
+
+    margin-top: 12px;
+
+    border: 1px solid rgba(255, 255, 255, 0.08);
+
+    border-radius: 12px;
+
+    background: var(--card-bg);
+
+    color: white;
+
+    font-size: 14px;
+
+    text-align: center;
+
+    outline: none;
+
+    box-sizing: border-box;
+}
+
+.search-modal-input::placeholder {
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.search-modal-input:focus {
+    outline: none;
+
+    box-shadow: none;
+
+    border-color: rgba(255, 255, 255, 0.08);
+}
+/* =======================================
+*/
+.revenue-header {
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    gap: 6px;
+
+    margin-bottom: 18px;
+
+    color: var(--text-secondary);
+
+    font-size: 0.95rem;
+
+    font-weight: 600;
+}
+
+.revenue-month {
+    background: transparent;
+
+    border: none;
+
+    color: white;
+
+    font-size: 0.95rem;
+
+    outline: none;
+
+    appearance: none;
+
+    padding-right: 14px;
+}
+.month-btn {
+    background: none;
+
+    border: none;
+
+    color: var(--accent);
+
+    font-weight: 600;
+
+    font-size: 0.95rem;
+}
+#monthList {
+    margin-top: 12px;
+
+    max-height: 300px;
+
+    overflow-y: auto;
+}
+
+.month-item {
+    padding: 16px;
+
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+
+    cursor: pointer;
+
+    text-align: center;
+
+    font-size: 16px;
+
+    font-weight: 500;
+}
+
+.month-item:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+#monthModal .home-modal-content {
+    max-height: 70vh;
+
+    overflow: hidden;
+}
+#monthModal .search-modal-input {
+    text-align: center;
 }

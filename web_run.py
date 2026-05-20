@@ -4,6 +4,7 @@ import logging
 import signal
 import sys
 import uvicorn
+from source.database.schema import init_db
 
 # ─── Banner & Logging ─────────────────────────
 BANNER = """
@@ -31,6 +32,8 @@ def handle_signal():
 
 # ─── Main ─────────────────────────────────────
 async def main():
+    await init_db()
+    
     print(BANNER)
     logger.info("🚀 Memulai server web...")
 

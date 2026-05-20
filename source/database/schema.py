@@ -56,13 +56,22 @@ async def init_db():
 
         # Tabel users
         await db.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                user_id INTEGER PRIMARY KEY,
-                username TEXT,
-                first_name TEXT,
-                last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+                CREATE TABLE IF NOT EXISTS users (
+                    user_id INTEGER PRIMARY KEY,
+                    username TEXT,
+                    first_name TEXT,
+                    last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
+        try:
+            await db.execute("""
+                ALTER TABLE users
+                ADD COLUMN is_banned INTEGER DEFAULT 0
+            """)
+
+        except Exception as e:
+            print("ERROR:", e)
 
         # Tabel config
         await db.execute("""

@@ -10,7 +10,9 @@ from web.back_end.routes.settings import router as settings_router
 from web.back_end.routes.profile import router as profile_router
 import os
 from web.back_end.routes.notifications import router as notification_router
+
 from web.back_end.routes.auth import router as auth_router
+
 app = FastAPI(title="AiGen Store Admin Dashboard")
 
 # Mount folder frontend di /static agar CSS/JS bisa diakses

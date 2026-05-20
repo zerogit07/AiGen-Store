@@ -1,5 +1,7 @@
 import aiosqlite
 from source.config import DB_PATH
+from datetime import datetime
+
 
 async def get_config(key: str):
     async with aiosqlite.connect(DB_PATH) as db:
@@ -10,6 +12,7 @@ async def get_config(key: str):
             row = await cursor.fetchone()
             return row[0] if row else None
 
+
 async def set_config(key: str, value: str):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("PRAGMA foreign_keys = ON")
@@ -17,6 +20,7 @@ async def set_config(key: str, value: str):
             "INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)", (key, value)
         )
         await db.commit()
+
 
 async def set_auto_delete_days(days: int):
     async with aiosqlite.connect(DB_PATH) as db:
@@ -27,6 +31,7 @@ async def set_auto_delete_days(days: int):
         )
         await db.commit()
 
+
 async def get_auto_delete_days() -> int:
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("PRAGMA foreign_keys = ON")
@@ -35,6 +40,7 @@ async def get_auto_delete_days() -> int:
         ) as cursor:
             row = await cursor.fetchone()
             return int(row[0]) if row else 7
+
 
 async def get_total_revenue():
     async with aiosqlite.connect(DB_PATH) as db:
@@ -45,6 +51,7 @@ async def get_total_revenue():
             row = await cursor.fetchone()
             return row[0] if row[0] else 0
 
+
 async def get_order_counts():
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("PRAGMA foreign_keys = ON")
@@ -53,6 +60,7 @@ async def get_order_counts():
         ) as cursor:
             rows = await cursor.fetchall()
             return {status: count for status, count in rows}
+
 
 async def get_total_items_sold():
     async with aiosqlite.connect(DB_PATH) as db:
@@ -63,12 +71,14 @@ async def get_total_items_sold():
             row = await cursor.fetchone()
             return row[0] if row[0] else 0
 
+
 async def get_remaining_stock():
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("PRAGMA foreign_keys = ON")
         async with db.execute("SELECT COUNT(*) FROM items WHERE is_used = 0") as cursor:
             row = await cursor.fetchone()
             return row[0] if row else 0
+
 
 async def add_broadcast_job(target_type: str, message_text: str, schedule_time: str):
     async with aiosqlite.connect(DB_PATH) as db:
@@ -82,6 +92,7 @@ async def add_broadcast_job(target_type: str, message_text: str, schedule_time: 
         )
         await db.commit()
 
+
 async def get_scheduled_broadcasts():
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("PRAGMA foreign_keys = ON")
@@ -89,6 +100,7 @@ async def get_scheduled_broadcasts():
             'SELECT id, target_type, message_text, schedule_time FROM broadcast_jobs WHERE status = "scheduled" AND schedule_time > datetime("now")'
         ) as cursor:
             return await cursor.fetchall()
+
 
 async def update_broadcast_job_status(job_id: int, status: str):
     async with aiosqlite.connect(DB_PATH) as db:
@@ -98,8 +110,144 @@ async def update_broadcast_job_status(job_id: int, status: str):
         )
         await db.commit()
 
+
 async def delete_broadcast_job(job_id: int):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("PRAGMA foreign_keys = ON")
         await db.execute("DELETE FROM broadcast_jobs WHERE id = ?", (job_id,))
         await db.commit()
+
+
+# home statistik
+async def get_total_revenue_month(month=None):
+    async with aiosqlite.connect(DB_PATH) as db:
+        query = """
+            SELECT
+                COALESCE(
+                    SUM(total_price),
+                    0
+                )
+
+            FROM orders
+
+            WHERE status='approved'
+            AND strftime(
+                '%Y-%m',
+                created_at
+            )=
+            strftime(
+                '%Y-%m',
+                'now'
+            )
+        """
+
+        params = ()
+
+        if month:
+            query = """
+                SELECT
+                    COALESCE(
+                        SUM(total_price),
+                        0
+                    )
+
+                FROM orders
+
+                WHERE status='approved'
+                AND strftime(
+                    '%m',
+                    created_at
+                )=?
+            """
+
+            params = (month,)
+
+        cursor = await db.execute(query, params)
+
+        result = (await cursor.fetchone())[0]
+
+        return result
+
+
+async def get_order_counts_month(month=None):
+    async with aiosqlite.connect(DB_PATH) as db:
+        query = """
+            SELECT
+                status,
+                COUNT(*)
+
+            FROM orders
+
+            WHERE strftime(
+                '%Y-%m',
+                created_at
+            )=
+            strftime(
+                '%Y-%m',
+                'now'
+            )
+
+            GROUP BY status
+        """
+
+        params = ()
+
+        if month:
+            query = """
+                SELECT
+                    status,
+                    COUNT(*)
+
+                FROM orders
+
+                WHERE strftime(
+                    '%m',
+                    created_at
+                )=?
+
+                GROUP BY status
+            """
+
+            params = (month,)
+
+        cursor = await db.execute(query, params)
+
+        rows = await cursor.fetchall()
+
+        return {row[0]: row[1] for row in rows}
+
+async def get_total_items_sold_month(month=None):
+    async with aiosqlite.connect(DB_PATH) as db:
+
+        query = """
+            SELECT
+                COALESCE(
+                    SUM(quantity),
+                    0
+                )
+
+            FROM orders
+
+            WHERE status='approved'
+        """
+
+        params = ()
+
+        if month:
+            query += """
+            AND strftime(
+                '%m',
+                created_at
+            )=?
+            """
+
+            params = (month,)
+
+        cursor = await db.execute(
+            query,
+            params
+        )
+
+        result = await cursor.fetchone()
+
+        return result[0] or 0

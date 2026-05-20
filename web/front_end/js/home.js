@@ -1,24 +1,44 @@
 // web/front_end/js/home.js
 
+let currentUserPage = 1;
+let currentReportPage = 1;
+
+let currentSearch = "";
+let currentFilter = "";
+let currentMonth = "";
+
 async function loadHomePage(tab = "statistik") {
     try {
-        const res = await fetch("/api/home");
+        let endpoint = `/api/home?month=${currentMonth}`;
+        if (tab === "user") {
+            endpoint = `/api/home/users?page=${currentUserPage}&search=${currentSearch}`;
+        }
+
+        if (tab === "laporan") {
+            endpoint = `/api/home/report?page=${currentReportPage}&filter_type=${currentFilter}`;
+        }
+
+        const res = await fetch(endpoint);
         const data = await res.json();
 
         const renderMap = {
             statistik: () => renderStatistik(data),
-            user: () => renderUser(),
-            laporan: () => renderLaporan()
+            user: () => renderUser(data),
+            laporan: () => renderLaporan(data)
         };
 
         content.innerHTML =
             renderMap[tab]?.() || renderPlaceholder("Tab tidak ditemukan");
+
+        initEvents(tab);
     } catch (e) {
         console.log(e);
 
         content.innerHTML = renderPlaceholder("❌ Gagal memuat");
     }
 }
+
+function initEvents(tab) {}
 
 /* ======================
    STATISTIK
@@ -36,8 +56,17 @@ function renderRevenue(data) {
     return `
     <div class="home-revenue card">
 
-        <div class="card-label-center">
-            💰 Pendapatan
+        <div class="revenue-header">
+
+            <span>💰 Pendapatan •</span>
+
+            <button
+                class="month-btn"
+                onclick="openMonthModal()"
+            >
+                ${data.bulan}
+            </button>
+
         </div>
 
         <div class="card-value-large">
@@ -45,7 +74,108 @@ function renderRevenue(data) {
         </div>
 
     </div>
+
+    ${renderMonthModal()}
     `;
+}
+
+function renderMonthModal() {
+    const bulan = [
+        "Januari",
+        "Februari",
+        "Maret",
+        "April",
+        "Mei",
+        "Juni",
+        "Juli",
+        "Agustus",
+        "September",
+        "Oktober",
+        "November",
+        "Desember"
+    ];
+
+    return `
+    <div
+        id="monthModal"
+        class="home-modal"
+    >
+
+        <div class="home-modal-content">
+
+            <input
+                id="monthSearch"
+                class="search-modal-input"
+                placeholder="🔎 Cari bulan..."
+                oninput="filterMonth()"
+            >
+
+            <div id="monthList">
+
+                ${bulan
+                    .map(
+                        item => `
+                    <div
+                        class="month-item"
+                        onclick="
+                            selectMonth(
+                                '${item}'
+                            )
+                        "
+                    >
+                        ${item}
+                    </div>
+                `
+                    )
+                    .join("")}
+
+            </div>
+
+        </div>
+
+    </div>
+    `;
+}
+
+function openMonthModal() {
+    document.getElementById("monthModal").style.display = "block";
+}
+
+function closeMonthModal() {
+    document.getElementById("monthModal").style.display = "none";
+}
+
+function selectMonth(month) {
+    currentMonth = month;
+
+    closeMonthModal();
+
+    loadHomePage("statistik");
+}
+
+function filterMonth() {
+    const input =
+    document
+    .getElementById(
+        "monthSearch"
+    )
+    .value
+    .toLowerCase();
+
+    const items =
+    document.querySelectorAll(
+        ".month-item"
+    );
+
+    items.forEach(
+        item=>{
+            item.style.display=
+            item.innerText
+            .toLowerCase()
+            .includes(input)
+            ?"block":"none";
+        }
+    );
 }
 
 function renderTopCards(data) {
@@ -87,11 +217,39 @@ function renderStatistikCards(data) {
             ["Tersedia", data.items_available]
         ])}
 
-        ${renderInfoCard("📊 Statistik Pesanan", [
-            ["Disetujui", data.approved],
-            ["Ditolak", data.rejected],
-            ["Total", data.total_orders]
-        ])}
+        <div class="card">
+
+            <div class="card-label-center">
+                📊 Statistik Pesanan
+            </div>
+
+            <table class="summary-table">
+                <tbody>
+
+                    <tr>
+                        <td>Disetujui</td>
+                        <td>${data.approved}</td>
+                    </tr>
+
+                    <tr>
+                        <td>Pending</td>
+                        <td>${data.pending}</td>
+                    </tr>
+
+                    <tr>
+                        <td>Ditolak</td>
+                        <td>${data.rejected}</td>
+                    </tr>
+
+                    <tr>
+                        <td>Total</td>
+                        <td>${data.total_orders}</td>
+                    </tr>
+
+                </tbody>
+            </table>
+
+        </div>
 
     </div>
     `;
@@ -105,23 +263,24 @@ function renderInfoCard(title, rows) {
             ${title}
         </div>
 
-        <div class="home-stats-list">
+        <table class="summary-table">
 
-            ${rows
-                .map(
-                    ([label, value]) => `
-                    <div class="home-stat-row">
+            <tbody>
 
-                        <span>${label}</span>
+                ${rows
+                    .map(
+                        ([label, value]) => `
+                    <tr>
+                        <td>${label}</td>
+                        <td>${value}</td>
+                    </tr>
+                `
+                    )
+                    .join("")}
 
-                        <span>${value}</span>
+            </tbody>
 
-                    </div>
-                    `
-                )
-                .join("")}
-
-        </div>
+        </table>
 
     </div>
     `;
@@ -131,88 +290,80 @@ function renderInfoCard(title, rows) {
    USER
 ====================== */
 
-function renderUser() {
-    return [renderUserTable(), renderUserModal()].join("");
+function renderUser(data) {
+    return [renderUserTable(data), renderUserModal(), renderSearchModal()].join(
+        ""
+    );
 }
 
-function renderUserTable() {
+function renderUserTable(data) {
     return `
     <div class="card">
 
-        <input
-            class="table-search"
-            placeholder="Cari ID..."
+        <button
+            class="filter-btn"
+            onclick="openSearchModal()"
         >
+            Cari User
+        </button>
 
         <div class="table-responsive">
 
             <table class="user-table">
 
-               <thead>
-
+                <thead>
                     <tr>
-                
                         <th>No</th>
                         <th>User ID</th>
                         <th>Username</th>
                         <th>Order</th>
                         <th>Total</th>
                         <th>Status</th>
-                
                     </tr>
-                
                 </thead>
 
                 <tbody>
-
-                    ${renderUserRows()}
-
+                    ${renderUserRows(data.data)}
                 </tbody>
 
             </table>
 
         </div>
 
-        ${renderPagination()}
+        ${renderPagination(data.pagination, "user")}
 
     </div>
     `;
 }
 
-function renderUserRows() {
-    const users = Array.from({ length: 10 }, (_, i) => ({
-        userId: 100123 + i,
-
-        username: `User${i + 1}`,
-
-        order: Math.floor(Math.random() * 20),
-
-        total: ((i + 1) * 50000).toLocaleString(),
-
-        status: i % 2 === 0 ? "Active" : "Banned"
-    }));
-
+function renderUserRows(users) {
     return users
         .map(
             (user, index) => `
-            <tr onclick="openUserModal()">
+        <tr
+            onclick="
+                openUserModal(
+                    ${user.user_id}
+                )
+            "
+        >
 
-                <td>${index + 1}</td>
+            <td>${index + 1}</td>
 
-                <td>${user.userId}</td>
+            <td>${user.user_id}</td>
 
-                <td>${user.username}</td>
+            <td>${user.username}</td>
 
-                <td>${user.order}</td>
+            <td>${user.order}</td>
 
-                <td>Rp${user.total}</td>
+            <td>${user.total}</td>
 
-                <td>
-                    ${renderStatus(user.status)}
-                </td>
+            <td>
+                ${renderStatus(user.status)}
+            </td>
 
-            </tr>
-            `
+        </tr>
+        `
         )
         .join("");
 }
@@ -229,27 +380,53 @@ function renderStatus(status) {
 
 function renderUserModal() {
     return `
-    <div id="userModal" class="home-modal">
+    <div
+        id="userModal"
+        class="home-modal">
+
+        <div
+            id="userModalContent"
+            class="home-modal-content">
+
+        </div>
+
+    </div>
+    `;
+}
+function renderSearchModal() {
+    return `
+    <div
+        id="searchModal"
+        class="home-modal"
+    >
 
         <div class="home-modal-content">
 
-            <h3>Detail User</h3>
+            <h3>
+                Cari User
+            </h3>
 
-            <p>ID : 100123</p>
+            <input
+                id="searchUserInput"
+                class="search-modal-input"
+                placeholder="Masukkan User ID"
+            >
 
-            <p>Username : Abdul</p>
+            <div class="modal-action">
 
-            <p>Order : 15</p>
+                <button
+                    onclick="submitSearch()"
+                >
+                    Cari
+                </button>
 
-            <p>Total : Rp150.000</p>
+                <button
+                    onclick="closeSearchModal()"
+                >
+                    Batal
+                </button>
 
-            <button>
-                Ban User
-            </button>
-
-            <button onclick="closeUserModal()">
-                Tutup
-            </button>
+            </div>
 
         </div>
 
@@ -257,48 +434,168 @@ function renderUserModal() {
     `;
 }
 
-function openUserModal() {
-    document.getElementById("userModal").style.display = "block";
-}
-
 function closeUserModal() {
     document.getElementById("userModal").style.display = "none";
 }
 
+async function openUserModal(userId) {
+    const res = await fetch(`/api/home/user-detail?user_id=${userId}`);
+
+    const data = await res.json();
+
+    document.getElementById("userModalContent").innerHTML = `
+
+        <h3>
+            Detail User
+        </h3>
+
+        <p>
+            ID :
+            ${data.user_id}
+        </p>
+
+        <p>
+            Username :
+            ${data.username}
+        </p>
+
+        <p>
+            Order :
+            ${data.order}
+        </p>
+
+        <p>
+            Total :
+            ${data.total}
+        </p>
+
+        <p>
+            Status :
+            ${data.status}
+        </p>
+
+        <button onclick="toggleUserStatus(${data.user_id},${data.is_banned})">
+    ${data.is_banned ? "Unban User" : "Ban User"}
+</button>
+
+<button onclick="closeUserModal()">
+    Tutup
+</button>
+    `;
+
+    document.getElementById("userModal").style.display = "block";
+}
+async function toggleUserStatus(userId, banned) {
+    await fetch("/api/home/user-status", {
+        method: "POST",
+
+        headers: {
+            "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify({
+            user_id: userId,
+            status: banned ? 0 : 1
+        })
+    });
+
+    closeUserModal();
+
+    loadHomePage("user");
+}
+
+function openSearchModal() {
+    document.getElementById("searchModal").style.display = "block";
+}
+
+function closeSearchModal() {
+    document.getElementById("searchModal").style.display = "none";
+}
+
+function submitSearch() {
+    const value = document.getElementById("searchUserInput").value;
+
+    currentSearch = value;
+
+    currentUserPage = 1;
+
+    closeSearchModal();
+
+    loadHomePage("user");
+}
 /* ======================
    PAGINATION
 ====================== */
 
-function renderPagination() {
+function renderPagination(data, tab) {
+    const totalPages = data.total_pages || 1;
+
     return `
     <div class="pagination">
 
-        <button>
+        <button
+            onclick="
+            changePage(
+            '${tab}',
+            -1
+            )
+            "
+
+            ${data.page <= 1 ? "disabled" : ""}
+        >
+
             Prev
+
         </button>
 
         <span>
-            1 2 3
+
+            ${data.page}
+            /
+            ${totalPages}
+
         </span>
 
-        <button>
+        <button
+            onclick="
+            changePage(
+            '${tab}',
+            1
+            )
+            "
+
+            ${data.page >= totalPages ? "disabled" : ""}
+
+        >
+
             Next
+
         </button>
 
     </div>
     `;
 }
 
+function changePage(tab, step) {
+    if (tab === "user") {
+        currentUserPage = Math.max(1, currentUserPage + step);
+    }
+
+    if (tab === "laporan") {
+        currentReportPage = Math.max(1, currentReportPage + step);
+    }
+
+    loadHomePage(tab);
+}
 /* ======================
    LAPORAN
 ====================== */
 
-function renderLaporan() {
+function renderLaporan(data) {
     return [
         renderFilterButton(),
-        renderSummary(),
-        renderProdukTerlaris(),
-        renderRiwayat(),
+        renderProdukTerlaris(data.products),
+        renderRiwayat(data),
         renderFilterModal()
     ].join("");
 }
@@ -313,8 +610,7 @@ function renderFilterButton() {
 
         <button
             class="filter-btn"
-            onclick="openFilterModal()"
-        >
+            onclick="openFilterModal()">
 
             -- Filter --
 
@@ -330,9 +626,7 @@ function renderFilterModal() {
 
         <div class="home-modal-content">
 
-            <h3>
-                Filter Laporan
-            </h3>
+            <h3>Filter Laporan</h3>
 
             <button onclick="selectFilter('today')">
                 Hari Ini
@@ -350,10 +644,6 @@ function renderFilterModal() {
                 Tahun Ini
             </button>
 
-            <button onclick="openCustomFilter()">
-                Custom
-            </button>
-
             <button onclick="closeFilterModal()">
                 Tutup
             </button>
@@ -365,9 +655,13 @@ function renderFilterModal() {
 }
 
 function selectFilter(type) {
-    console.log(type);
+    currentFilter = type;
+
+    currentReportPage = 1;
 
     closeFilterModal();
+
+    loadHomePage("laporan");
 }
 
 function openFilterModal() {
@@ -378,53 +672,46 @@ function closeFilterModal() {
     document.getElementById("filterModal").style.display = "none";
 }
 
-function openCustomFilter() {
-    alert("Custom belum dibuat");
-}
-
 /* ======================
-   RINGKASAN
+   SUMMARY
 ====================== */
 
-function renderSummary() {
+function renderSummary(data) {
     return `
     <div class="card">
-
         <div class="card-label-center">
             Ringkasan
         </div>
 
         <table class="summary-table">
-
             <tbody>
 
                 <tr>
                     <td>Pendapatan</td>
-                    <td>Rp1.250.000</td>
-                </tr>
-
-                <tr>
-                    <td>Order</td>
-                    <td>120</td>
+                    <td>${data.pendapatan}</td>
                 </tr>
 
                 <tr>
                     <td>Disetujui</td>
-                    <td>113</td>
+                    <td>${data.approved}</td>
                 </tr>
 
                 <tr>
                     <td>Pending</td>
-                    <td>5</td>
+                    <td>${data.pending}</td>
                 </tr>
 
                 <tr>
                     <td>Ditolak</td>
-                    <td>2</td>
+                    <td>${data.rejected}</td>
+                </tr>
+
+                <tr>
+                    <td>Total</td>
+                    <td>${data.order}</td>
                 </tr>
 
             </tbody>
-
         </table>
 
     </div>
@@ -435,7 +722,7 @@ function renderSummary() {
    PRODUK
 ====================== */
 
-function renderProdukTerlaris() {
+function renderProdukTerlaris(products) {
     return `
     <div class="card">
 
@@ -448,22 +735,26 @@ function renderProdukTerlaris() {
             <thead>
 
                 <tr>
-
                     <th>No</th>
                     <th>Produk</th>
                     <th>Terjual</th>
-
                 </tr>
 
             </thead>
 
             <tbody>
 
-                <tr>
-                    <td>1</td>
-                    <td>Netflix</td>
-                    <td>35</td>
-                </tr>
+                ${products
+                    .map(
+                        (item, index) => `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${item.name}</td>
+                        <td>${item.sold}</td>
+                    </tr>
+                    `
+                    )
+                    .join("")}
 
             </tbody>
 
@@ -477,18 +768,13 @@ function renderProdukTerlaris() {
    RIWAYAT
 ====================== */
 
-function renderRiwayat() {
+function renderRiwayat(data) {
     return `
     <div class="card">
 
         <div class="card-label-center">
             Riwayat Transaksi
         </div>
-
-        <input
-            class="table-search"
-            placeholder="Cari Order ID..."
-        >
 
         <div class="table-responsive">
 
@@ -509,38 +795,22 @@ function renderRiwayat() {
                 </thead>
 
                 <tbody>
-                    ${renderRiwayatRows()}
+                    ${renderRiwayatRows(data.history)}
+
+
                 </tbody>
 
             </table>
 
         </div>
 
-        ${renderPagination()}
+        ${renderPagination(data.pagination, "laporan")}
 
     </div>
     `;
 }
 
-function renderRiwayatRows() {
-    const data = Array.from({ length: 10 }, (_, i) => ({
-        id: `ORD${129 + i}`,
-
-        userId: 100123 + i,
-
-        username: `User${i + 1}`,
-
-        produk: "Netflix",
-
-        qty: Math.floor(Math.random() * 5) + 1,
-
-        total: "25.000",
-
-        tanggal: new Date().toLocaleDateString("id-ID"),
-
-        status: "Selesai"
-    }));
-
+function renderRiwayatRows(data) {
     return data
         .map(
             (item, index) => `
@@ -550,22 +820,22 @@ function renderRiwayatRows() {
 
             <td>${item.id}</td>
 
-            <td>${item.userId}</td>
+            <td>${item.user_id}</td>
 
             <td>${item.username}</td>
 
-            <td>${item.produk}</td>
+            <td class="history-product">
+                ${item.produk}
+            </td>
 
             <td>${item.qty}</td>
 
-            <td>Rp${item.total}</td>
+            <td>${item.total}</td>
 
             <td>${item.tanggal}</td>
 
             <td>
-                <span class="badge success">
-                    ${item.status}
-                </span>
+                ${renderOrderStatus(item.status)}
             </td>
 
         </tr>
@@ -583,5 +853,23 @@ function renderPlaceholder(text) {
         </div>
 
     </div>
+    `;
+}
+
+function renderOrderStatus(status) {
+    let cls = "warning";
+
+    if (status === "approved") {
+        cls = "success";
+    }
+
+    if (status === "rejected") {
+        cls = "danger";
+    }
+
+    return `
+    <span class="badge ${cls}">
+        ${status}
+    </span>
     `;
 }
