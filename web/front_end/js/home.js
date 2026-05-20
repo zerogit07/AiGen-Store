@@ -148,19 +148,19 @@ function renderUserTable() {
 
             <table class="user-table">
 
-                <thead>
+               <thead>
 
                     <tr>
-
+                
                         <th>No</th>
-                        <th>ID</th>
+                        <th>User ID</th>
                         <th>Username</th>
                         <th>Order</th>
                         <th>Total</th>
                         <th>Status</th>
-
+                
                     </tr>
-
+                
                 </thead>
 
                 <tbody>
@@ -181,8 +181,10 @@ function renderUserTable() {
 
 function renderUserRows() {
     const users = Array.from({ length: 10 }, (_, i) => ({
-        id: 100123 + i,
+        userId: 100123 + i,
+
         username: `User${i + 1}`,
+
         order: Math.floor(Math.random() * 20),
 
         total: ((i + 1) * 50000).toLocaleString(),
@@ -197,7 +199,7 @@ function renderUserRows() {
 
                 <td>${index + 1}</td>
 
-                <td>${user.id}</td>
+                <td>${user.userId}</td>
 
                 <td>${user.username}</td>
 
@@ -494,14 +496,15 @@ function renderRiwayat() {
 
                 <thead>
                     <tr>
-
                         <th>No</th>
                         <th>Order ID</th>
-                        <th>User</th>
+                        <th>User ID</th>
+                        <th>Username</th>
                         <th>Produk</th>
+                        <th>Qty</th>
                         <th>Total</th>
+                        <th>Tanggal</th>
                         <th>Status</th>
-
                     </tr>
                 </thead>
 
@@ -522,34 +525,50 @@ function renderRiwayat() {
 function renderRiwayatRows() {
     const data = Array.from({ length: 10 }, (_, i) => ({
         id: `ORD${129 + i}`,
-        user: `User${i + 1}`,
+
+        userId: 100123 + i,
+
+        username: `User${i + 1}`,
+
         produk: "Netflix",
+
+        qty: Math.floor(Math.random() * 5) + 1,
+
         total: "25.000",
+
+        tanggal: new Date().toLocaleDateString("id-ID"),
+
         status: "Selesai"
     }));
 
     return data
         .map(
             (item, index) => `
-            <tr>
+        <tr>
 
-                <td>${index + 1}</td>
+            <td>${index + 1}</td>
 
-                <td>${item.id}</td>
+            <td>${item.id}</td>
 
-                <td>${item.user}</td>
+            <td>${item.userId}</td>
 
-                <td>${item.produk}</td>
+            <td>${item.username}</td>
 
-                <td>Rp${item.total}</td>
+            <td>${item.produk}</td>
 
-                <td>
-                    <span class="badge success">
-                        ${item.status}
-                    </span>
-                </td>
+            <td>${item.qty}</td>
 
-            </tr>
+            <td>Rp${item.total}</td>
+
+            <td>${item.tanggal}</td>
+
+            <td>
+                <span class="badge success">
+                    ${item.status}
+                </span>
+            </td>
+
+        </tr>
         `
         )
         .join("");
