@@ -705,9 +705,14 @@ function renderFilterModal() {
     </div>
     `;
 }
-
 function selectFilter(type) {
     currentFilter = type;
+
+    currentCustomType = "";
+
+    currentStartDate = "";
+
+    currentEndDate = "";
 
     const now = new Date();
 
@@ -761,7 +766,6 @@ function selectFilter(type) {
 
     loadHomePage("laporan");
 }
-
 function openFilterModal() {
     document.getElementById("filterModal").style.display = "block";
 }
@@ -845,9 +849,45 @@ function openCustomFilter() {
 `;
 }
 function backToFilter() {
-    document.getElementById("filterModal").outerHTML = renderFilterModal();
+    const modal = document.getElementById("filterModal");
 
-    openFilterModal();
+    modal.innerHTML = `
+        <div class="filter-overlay">
+
+            <div class="home-modal-content filter-box">
+
+                <h3>
+                    Filter Laporan
+                </h3>
+
+                <button onclick="selectFilter('today')">
+                    Hari Ini
+                </button>
+
+                <button onclick="selectFilter('week')">
+                    Minggu Ini
+                </button>
+
+                <button onclick="selectFilter('month')">
+                    Bulan Ini
+                </button>
+
+                <button onclick="selectFilter('year')">
+                    Tahun Ini
+                </button>
+
+                <button onclick="openCustomFilter()">
+                    Custom
+                </button>
+
+                <button onclick="closeFilterModal()">
+                    Tutup
+                </button>
+
+            </div>
+
+        </div>
+    `;
 }
 
 function selectCustomType(type) {
@@ -1100,6 +1140,8 @@ function selectCustomType(type) {
 }
 
 function applyFilter(type, id) {
+    currentFilter = "";
+
     currentCustomType = type;
 
     currentStartDate = document.getElementById(id).value;
@@ -1146,12 +1188,12 @@ function applyFilter(type, id) {
         end.setDate(start.getDate() + 6);
 
         label = `${start.getDate()}-${end.getDate()}
-        ${bulan[end.getMonth()]}
-        ${end.getFullYear()}`;
+            ${bulan[end.getMonth()]}
+            ${end.getFullYear()}`;
     } else if (type === "range") {
-        label = `${formatDate(currentStartDate)} - ${formatDate(
-            currentEndDate
-        )}`;
+        label = `${formatDate(currentStartDate)}
+            -
+            ${formatDate(currentEndDate)}`;
     } else {
         label = formatDate(currentStartDate);
     }
@@ -1159,6 +1201,8 @@ function applyFilter(type, id) {
     currentFilterLabel = `📅 ${label}`;
 
     currentReportPage = 1;
+
+    backToFilter();
 
     closeFilterModal();
 
