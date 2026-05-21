@@ -625,16 +625,16 @@ function renderFilterButton() {
 
         <button
             class="filter-btn"
-            onclick="openFilterModal()">
+            onclick="openFilterModal()"
+        >
 
-            ${currentFilterLabel}
+            ${currentFilterLabel || "-- Filter --"}
 
         </button>
 
     </div>
     `;
 }
-
 function renderFilterModal() {
     return `
     <div
@@ -717,6 +717,52 @@ function renderFilterModal() {
 function selectFilter(type) {
     currentFilter = type;
 
+    const now = new Date();
+
+    const bulan = [
+        "Januari",
+        "Februari",
+        "Maret",
+        "April",
+        "Mei",
+        "Juni",
+        "Juli",
+        "Agustus",
+        "September",
+        "Oktober",
+        "November",
+        "Desember"
+    ];
+
+    let label = "";
+
+    if (type === "today") {
+        label = now.toLocaleDateString("id-ID", {
+            day: "numeric",
+            month: "long",
+            year: "numeric"
+        });
+    } else if (type === "week") {
+        const start = new Date(now);
+
+        start.setDate(now.getDate() - now.getDay() + 1);
+
+        const end = new Date(start);
+
+        end.setDate(start.getDate() + 6);
+
+        label = `${start.getDate()}-${end.getDate()}
+            ${bulan[end.getMonth()]}
+            ${end.getFullYear()}`;
+    } else if (type === "month") {
+        label = `${bulan[now.getMonth()]}
+            ${now.getFullYear()}`;
+    } else if (type === "year") {
+        label = `${now.getFullYear()}`;
+    }
+
+    currentFilterLabel = `📅 ${label}`;
+
     currentReportPage = 1;
 
     closeFilterModal();
@@ -742,27 +788,61 @@ function openCustomFilter() {
             Custom
         </h3>
 
-        <button onclick="selectCustomType('range')">
+        <button
+            onclick="
+                selectCustomType(
+                    'range'
+                )
+            "
+        >
             Rentang
         </button>
 
-        <button onclick="selectCustomType('day')">
+        <button
+            onclick="
+                selectCustomType(
+                    'day'
+                )
+            "
+        >
             Hari
         </button>
 
-        <button onclick="selectCustomType('week')">
+        <button
+            onclick="
+                selectCustomType(
+                    'week'
+                )
+            "
+        >
             Minggu
         </button>
 
-        <button onclick="selectCustomType('month')">
+        <button
+            onclick="
+                selectCustomType(
+                    'month'
+                )
+            "
+        >
             Bulan
         </button>
 
-        <button onclick="selectCustomType('year')">
+        <button
+            onclick="
+                selectCustomType(
+                    'year'
+                )
+            "
+        >
             Tahun
         </button>
 
-        <button onclick="backToFilter()">
+        <button
+            onclick="
+                backToFilter()
+            "
+        >
             Kembali
         </button>
 
@@ -772,7 +852,6 @@ function openCustomFilter() {
 
 `;
 }
-
 function backToFilter() {
     document.getElementById("filterModal").outerHTML = renderFilterModal();
 
@@ -780,137 +859,230 @@ function backToFilter() {
 }
 
 function selectCustomType(type) {
-    let html = "";
+    const years = Array.from(
+        {
+            length: new Date().getFullYear() - 2019
+        },
+        (_, i) => new Date().getFullYear() - i
+    );
 
-    if (type === "range") {
-        html = `
+    const config = {
+        range: `
+            <h3>
+                Rentang
+            </h3>
 
-    <h3>Rentang</h3>
+            <div class="date-wrap">
 
-    <input
-        id="startDate"
-        type="date"
-        class="search-modal-input"
-    >
+                <span class="date-placeholder">
+                    Pilih Hari Awal
+                </span>
 
-    <input
-        id="endDate"
-        type="date"
-        class="search-modal-input"
-    >
+                <input
+                    id="startDate"
+                    type="date"
+                    class="
+                        search-modal-input
+                        custom-date
+                    "
+                    onchange="
+                    this.previousElementSibling
+                    .style.display='none'
+                    "
+                >
 
-    <button onclick="applyRange()">
-        Terapkan
-    </button>
+            </div>
 
-    <button onclick="openCustomFilter()">
-        Kembali
-    </button>
-    `;
-    } else if (type === "day") {
-        html = `
+            <div class="date-wrap">
 
-    <h3>Pilih Hari</h3>
+                <span class="date-placeholder">
+                    Pilih Hari Akhir
+                </span>
 
-    <input
-        id="dayDate"
-        type="date"
-        class="search-modal-input"
-    >
+                <input
+                    id="endDate"
+                    type="date"
+                    class="
+                        search-modal-input
+                        custom-date
+                    "
+                    onchange="
+                    this.previousElementSibling
+                    .style.display='none'
+                    "
+                >
 
-    <button onclick="applyDay()">
-        Terapkan
-    </button>
+            </div>
 
-    <button onclick="openCustomFilter()">
-        Kembali
-    </button>
-    `;
-    } else if (type === "week") {
-        html = `
+            <button
+                onclick="
+                    applyFilter(
+                        'range',
+                        'startDate'
+                    )
+                "
+            >
+                Terapkan
+            </button>
+        `,
 
-    <h3>Pilih Minggu</h3>
+        day: `
+            <h3>
+                Pilih Hari
+            </h3>
 
-    <input
-        id="weekDate"
-        type="week"
-        class="search-modal-input"
-    >
+            <div class="date-wrap">
 
-    <button onclick="applyWeek()">
-        Terapkan
-    </button>
+                <span class="date-placeholder">
+                    Pilih Hari
+                </span>
 
-    <button onclick="openCustomFilter()">
-        Kembali
-    </button>
-    `;
-    } else if (type === "month") {
-        html = `
+                <input
+                    id="dayDate"
+                    type="date"
+                    class="
+                        search-modal-input
+                        custom-date
+                    "
+                    onchange="
+                    this.previousElementSibling
+                    .style.display='none'
+                    "
+                >
 
-    <h3>Pilih Bulan</h3>
+            </div>
 
-    <input
-        id="monthDate"
-        type="month"
-        class="search-modal-input"
-    >
+            <button
+                onclick="
+                    applyFilter(
+                        'day',
+                        'dayDate'
+                    )
+                "
+            >
+                Terapkan
+            </button>
+        `,
 
-    <button onclick="applyMonth()">
-        Terapkan
-    </button>
+        week: `
+            <h3>
+                Pilih Minggu
+            </h3>
 
-    <button onclick="openCustomFilter()">
-        Kembali
-    </button>
-    `;
-    } else if (type === "year") {
-        const years = [];
+            <div class="date-wrap">
 
-        for (let i = new Date().getFullYear(); i >= 2020; i--) {
-            years.push(i);
-        }
+                <span class="date-placeholder">
+                    Pilih Minggu
+                </span>
 
-        html = `
+                <input
+                    id="weekDate"
+                    type="week"
+                    class="
+                        search-modal-input
+                        custom-date
+                    "
+                    onchange="
+                    this.previousElementSibling
+                    .style.display='none'
+                    "
+                >
 
-    <h3>
-        Pilih Tahun
-    </h3>
+            </div>
 
-    <select
-        id="yearDate"
-        class="search-modal-input"
-    >
+            <button
+                onclick="
+                    applyFilter(
+                        'week',
+                        'weekDate'
+                    )
+                "
+            >
+                Terapkan
+            </button>
+        `,
 
-        <option value="">
-            Pilih tahun
-        </option>
+        month: `
+            <h3>
+                Pilih Bulan
+            </h3>
 
-        ${years
-            .map(
-                year => `
-                <option value="${year}">
-                    ${year}
+            <div class="date-wrap">
+
+                <span class="date-placeholder">
+                    Pilih Bulan
+                </span>
+
+                <input
+                    id="monthDate"
+                    type="month"
+                    class="
+                        search-modal-input
+                        custom-date
+                    "
+                    onchange="
+                    this.previousElementSibling
+                    .style.display='none'
+                    "
+                >
+
+            </div>
+
+            <button
+                onclick="
+                    applyFilter(
+                        'month',
+                        'monthDate'
+                    )
+                "
+            >
+                Terapkan
+            </button>
+        `,
+
+        year: `
+            <h3>
+                Pilih Tahun
+            </h3>
+        
+            <select
+                id="yearDate"
+                class="search-modal-input"
+            >
+        
+                <option value="">
+                    Pilih Tahun
                 </option>
+        
+                ${years
+                    .map(
+                        year => `
+                    <option value="${year}">
+                        ${year}
+                    </option>
                 `
-            )
-            .join("")}
-
-    </select>
-
-    <button onclick="applyYear()">
-        Terapkan
-    </button>
-
-    <button onclick="openCustomFilter()">
-        Kembali
-    </button>
-    `;
-    }
+                    )
+                    .join("")}
+        
+            </select>
+        
+            <button
+                onclick="
+                    applyFilter(
+                        'year',
+                        'yearDate'
+                    )
+                "
+            >
+                Terapkan
+            </button>
+        `
+    };
 
     document.getElementById("filterModal").innerHTML = `
-
-    <div class="filter-overlay">
+    <div
+        class="filter-overlay"
+    >
 
         <div
             class="
@@ -919,87 +1091,80 @@ function selectCustomType(type) {
             "
         >
 
-            ${html}
+            ${config[type]}
+
+            <button
+                onclick="
+                    openCustomFilter()
+                "
+            >
+                Kembali
+            </button>
 
         </div>
 
     </div>
-
     `;
 }
 
-function applyRange() {
-    currentCustomType = "range";
+function applyFilter(type, id) {
+    currentCustomType = type;
 
-    currentStartDate = document.getElementById("startDate").value;
+    currentStartDate = document.getElementById(id).value;
 
-    currentEndDate = document.getElementById("endDate").value;
+    currentEndDate =
+        type === "range" ? document.getElementById("endDate").value : "";
 
-    currentFilterLabel = "📅 Rentang";
+    const bulan = [
+        "Januari",
+        "Februari",
+        "Maret",
+        "April",
+        "Mei",
+        "Juni",
+        "Juli",
+        "Agustus",
+        "September",
+        "Oktober",
+        "November",
+        "Desember"
+    ];
 
-    currentReportPage = 1;
+    let label = "";
 
-    closeFilterModal();
+    if (type === "year") {
+        label = currentStartDate;
+    } else if (type === "month") {
+        const [year, monthStr] = currentStartDate.split("-");
 
-    loadHomePage("laporan");
-}
+        const month = Number(monthStr);
 
-function applyDay() {
-    currentCustomType = "day";
+        label = `${bulan[month - 1]} ${year}`;
+    } else if (type === "week") {
+        const [yearStr, weekStr] = currentStartDate.split("-W");
 
-    currentStartDate = document.getElementById("dayDate").value;
+        const year = Number(yearStr);
 
-    currentEndDate = "";
+        const week = Number(weekStr);
 
-    currentFilterLabel = "📅 Hari";
+        const start = new Date(year, 0, 1 + (week - 1) * 7);
 
-    currentReportPage = 1;
+        const end = new Date(start);
 
-    closeFilterModal();
+        end.setDate(start.getDate() + 6);
 
-    loadHomePage("laporan");
-}
+        label = `${start.getDate()}-${end.getDate()}
+        ${bulan[end.getMonth()]}
+        ${end.getFullYear()}`;
+    } else if (type === "range") {
+        label = `${formatDate(currentStartDate)} - ${formatDate(
+            currentEndDate
+        )}`;
+    } else {
+        label = formatDate(currentStartDate);
+    }
 
-function applyWeek() {
-    currentCustomType = "week";
-
-    currentStartDate = document.getElementById("weekDate").value;
-
-    currentEndDate = "";
-
-    currentFilterLabel = "📅 Minggu";
-
-    currentReportPage = 1;
-
-    closeFilterModal();
-
-    loadHomePage("laporan");
-}
-
-function applyMonth() {
-    currentCustomType = "month";
-
-    currentStartDate = document.getElementById("monthDate").value;
-
-    currentEndDate = "";
-
-    currentFilterLabel = "📅 Bulan";
-
-    currentReportPage = 1;
-
-    closeFilterModal();
-
-    loadHomePage("laporan");
-}
-
-function applyYear() {
-    currentCustomType = "year";
-
-    currentStartDate = document.getElementById("yearDate").value;
-
-    currentEndDate = "";
-
-    currentFilterLabel = "📅 Tahun";
+    currentFilterLabel = `📅 ${label}`;
 
     currentReportPage = 1;
 
@@ -1008,6 +1173,13 @@ function applyYear() {
     loadHomePage("laporan");
 }
 
+function formatDate(date) {
+    return new Date(date).toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+    });
+}
 /* ======================
    SUMMARY
 ====================== */

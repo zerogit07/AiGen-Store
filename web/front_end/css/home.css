@@ -604,10 +604,53 @@
         0 0 0 1px rgba(255, 255, 255, 0.03),
         0 20px 60px rgba(0, 0, 0, 0.7);
 }
-.home-modal{
-    position:fixed;
+.home-modal {
+    position: fixed;
 
-    inset:0;
+    inset: 0;
 
-    z-index:9999;
+    z-index: 9999;
+}
+.date-wrap {
+    position: relative;
+    margin-bottom: 16px;
+}
+
+.date-placeholder {
+    position: absolute;
+
+    top: 50%;
+    left: 50%;
+
+    transform: translate(-50%, -50%) translateY(4px);
+
+    color: #888;
+
+    pointer-events: none;
+
+    z-index: 2;
+}
+
+.custom-date{
+    text-align:center;
+}
+
+.custom-date::-webkit-calendar-picker-indicator{
+    opacity:0;
+    width:0;
+}
+
+.custom-date::-webkit-datetime-edit{
+    text-align:center;
+}
+
+.custom-date::-webkit-date-and-time-value{
+    position:absolute;
+
+    left:50%;
+
+    transform:
+        translateX(
+            -50%
+        );
 }
