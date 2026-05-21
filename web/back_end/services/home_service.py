@@ -160,7 +160,10 @@ async def change_user_status(user_id: int, status: int):
 
 async def get_home_report(
     page: int = 1,
-    filter_type: str = ""
+    filter_type: str = "",
+    custom_type: str = "",
+    start_date: str = "",
+    end_date: str = "",
 ):
     limit = 10
     offset = (page - 1) * limit
@@ -169,16 +172,18 @@ async def get_home_report(
 
     products = await get_top_products(
         limit=3,
-        filter_type=filter_type
+        filter_type=filter_type,
+        custom_type=custom_type,
+        start_date=start_date,
+        end_date=end_date,
     )
 
     history, total = await get_history(
-        limit,
-        offset,
-        filter_type
+        limit, offset, filter_type, custom_type, start_date, end_date
     )
 
     total_pages = (total + limit - 1) // limit
+
     return {
         "summary": {
             "pendapatan": format_rupiah(summary[0]),
@@ -196,13 +201,7 @@ async def get_home_report(
                 "produk": h[3],
                 "qty": h[4],
                 "total": format_rupiah(h[5]),
-                "tanggal": h[6].split(" ")[0].split("-")[2]
-                + "/"
-                + h[6].split(" ")[0].split("-")[1]
-                + "/"
-                + h[6].split(" ")[0].split("-")[0]
-                if h[6]
-                else "-",
+                "tanggal": h[6],
                 "status": h[7],
             }
             for h in history

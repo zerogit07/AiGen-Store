@@ -565,3 +565,49 @@
 #monthModal .search-modal-input {
     text-align: center;
 }
+/* =======================================
+*/
+.filter-overlay {
+    position: absolute;
+
+    inset: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 20px;
+
+    background: rgba(0, 0, 0, 0.65);
+
+    backdrop-filter: blur(5px);
+
+    -webkit-backdrop-filter: blur(5px);
+}
+
+.filter-box {
+    width: 100%;
+
+    max-width: 500px;
+
+    background: #111;
+
+    border: 1px solid rgba(255, 255, 255, 0.08);
+
+    border-radius: 26px;
+
+    padding: 22px;
+
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.03),
+        0 20px 60px rgba(0, 0, 0, 0.7);
+}
+.home-modal{
+    position:fixed;
+
+    inset:0;
+
+    z-index:9999;
+}

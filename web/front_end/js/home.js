@@ -1,29 +1,57 @@
 // web/front_end/js/home.js
 
 let currentUserPage = 1;
+
 let currentReportPage = 1;
 
 let currentSearch = "";
+
 let currentFilter = "";
+
+let currentFilterLabel = "-- Filter --";
+
+let currentStartDate = "";
+
+let currentEndDate = "";
+
 let currentMonth = "";
+
+let currentCustomType = "";
 
 async function loadHomePage(tab = "statistik") {
     try {
         let endpoint = `/api/home?month=${currentMonth}`;
+
         if (tab === "user") {
             endpoint = `/api/home/users?page=${currentUserPage}&search=${currentSearch}`;
         }
 
         if (tab === "laporan") {
-            endpoint = `/api/home/report?page=${currentReportPage}&filter_type=${currentFilter}`;
+            endpoint = `
+            /api/home/report
+            ?page=${currentReportPage}
+            
+            &filter_type=${currentFilter}
+            
+            &custom_type=${currentCustomType}
+            
+            &start_date=${currentStartDate}
+            
+            &end_date=${currentEndDate}
+            `;
+
+            endpoint = endpoint.replace(/\n/g, "").replace(/\s+/g, "");
         }
 
         const res = await fetch(endpoint);
+
         const data = await res.json();
 
         const renderMap = {
             statistik: () => renderStatistik(data),
+
             user: () => renderUser(data),
+
             laporan: () => renderLaporan(data)
         };
 
@@ -154,28 +182,15 @@ function selectMonth(month) {
 }
 
 function filterMonth() {
-    const input =
-    document
-    .getElementById(
-        "monthSearch"
-    )
-    .value
-    .toLowerCase();
+    const input = document.getElementById("monthSearch").value.toLowerCase();
 
-    const items =
-    document.querySelectorAll(
-        ".month-item"
-    );
+    const items = document.querySelectorAll(".month-item");
 
-    items.forEach(
-        item=>{
-            item.style.display=
-            item.innerText
-            .toLowerCase()
-            .includes(input)
-            ?"block":"none";
-        }
-    );
+    items.forEach(item => {
+        item.style.display = item.innerText.toLowerCase().includes(input)
+            ? "block"
+            : "none";
+    });
 }
 
 function renderTopCards(data) {
@@ -612,7 +627,7 @@ function renderFilterButton() {
             class="filter-btn"
             onclick="openFilterModal()">
 
-            -- Filter --
+            ${currentFilterLabel}
 
         </button>
 
@@ -622,31 +637,76 @@ function renderFilterButton() {
 
 function renderFilterModal() {
     return `
-    <div id="filterModal" class="home-modal">
+    <div
+        id="filterModal"
+        class="home-modal"
+    >
 
-        <div class="home-modal-content">
+        <div class="filter-overlay">
 
-            <h3>Filter Laporan</h3>
+            <div class="home-modal-content filter-box">
 
-            <button onclick="selectFilter('today')">
-                Hari Ini
-            </button>
+                <h3>
+                    Filter Laporan
+                </h3>
 
-            <button onclick="selectFilter('week')">
-                Minggu Ini
-            </button>
+                <button
+                    onclick="
+                        selectFilter(
+                            'today'
+                        )
+                    "
+                >
+                    Hari Ini
+                </button>
 
-            <button onclick="selectFilter('month')">
-                Bulan Ini
-            </button>
+                <button
+                    onclick="
+                        selectFilter(
+                            'week'
+                        )
+                    "
+                >
+                    Minggu Ini
+                </button>
 
-            <button onclick="selectFilter('year')">
-                Tahun Ini
-            </button>
+                <button
+                    onclick="
+                        selectFilter(
+                            'month'
+                        )
+                    "
+                >
+                    Bulan Ini
+                </button>
 
-            <button onclick="closeFilterModal()">
-                Tutup
-            </button>
+                <button
+                    onclick="
+                        selectFilter(
+                            'year'
+                        )
+                    "
+                >
+                    Tahun Ini
+                </button>
+
+                <button
+                    onclick="
+                        openCustomFilter()
+                    "
+                >
+                    Custom
+                </button>
+
+                <button
+                    onclick="
+                        closeFilterModal()
+                    "
+                >
+                    Tutup
+                </button>
+
+            </div>
 
         </div>
 
@@ -670,6 +730,282 @@ function openFilterModal() {
 
 function closeFilterModal() {
     document.getElementById("filterModal").style.display = "none";
+}
+function openCustomFilter() {
+    document.getElementById("filterModal").innerHTML = `
+
+<div class="filter-overlay">
+
+    <div class="home-modal-content filter-box">
+
+        <h3>
+            Custom
+        </h3>
+
+        <button onclick="selectCustomType('range')">
+            Rentang
+        </button>
+
+        <button onclick="selectCustomType('day')">
+            Hari
+        </button>
+
+        <button onclick="selectCustomType('week')">
+            Minggu
+        </button>
+
+        <button onclick="selectCustomType('month')">
+            Bulan
+        </button>
+
+        <button onclick="selectCustomType('year')">
+            Tahun
+        </button>
+
+        <button onclick="backToFilter()">
+            Kembali
+        </button>
+
+    </div>
+
+</div>
+
+`;
+}
+
+function backToFilter() {
+    document.getElementById("filterModal").outerHTML = renderFilterModal();
+
+    openFilterModal();
+}
+
+function selectCustomType(type) {
+    let html = "";
+
+    if (type === "range") {
+        html = `
+
+    <h3>Rentang</h3>
+
+    <input
+        id="startDate"
+        type="date"
+        class="search-modal-input"
+    >
+
+    <input
+        id="endDate"
+        type="date"
+        class="search-modal-input"
+    >
+
+    <button onclick="applyRange()">
+        Terapkan
+    </button>
+
+    <button onclick="openCustomFilter()">
+        Kembali
+    </button>
+    `;
+    } else if (type === "day") {
+        html = `
+
+    <h3>Pilih Hari</h3>
+
+    <input
+        id="dayDate"
+        type="date"
+        class="search-modal-input"
+    >
+
+    <button onclick="applyDay()">
+        Terapkan
+    </button>
+
+    <button onclick="openCustomFilter()">
+        Kembali
+    </button>
+    `;
+    } else if (type === "week") {
+        html = `
+
+    <h3>Pilih Minggu</h3>
+
+    <input
+        id="weekDate"
+        type="week"
+        class="search-modal-input"
+    >
+
+    <button onclick="applyWeek()">
+        Terapkan
+    </button>
+
+    <button onclick="openCustomFilter()">
+        Kembali
+    </button>
+    `;
+    } else if (type === "month") {
+        html = `
+
+    <h3>Pilih Bulan</h3>
+
+    <input
+        id="monthDate"
+        type="month"
+        class="search-modal-input"
+    >
+
+    <button onclick="applyMonth()">
+        Terapkan
+    </button>
+
+    <button onclick="openCustomFilter()">
+        Kembali
+    </button>
+    `;
+    } else if (type === "year") {
+        const years = [];
+
+        for (let i = new Date().getFullYear(); i >= 2020; i--) {
+            years.push(i);
+        }
+
+        html = `
+
+    <h3>
+        Pilih Tahun
+    </h3>
+
+    <select
+        id="yearDate"
+        class="search-modal-input"
+    >
+
+        <option value="">
+            Pilih tahun
+        </option>
+
+        ${years
+            .map(
+                year => `
+                <option value="${year}">
+                    ${year}
+                </option>
+                `
+            )
+            .join("")}
+
+    </select>
+
+    <button onclick="applyYear()">
+        Terapkan
+    </button>
+
+    <button onclick="openCustomFilter()">
+        Kembali
+    </button>
+    `;
+    }
+
+    document.getElementById("filterModal").innerHTML = `
+
+    <div class="filter-overlay">
+
+        <div
+            class="
+            home-modal-content
+            filter-box
+            "
+        >
+
+            ${html}
+
+        </div>
+
+    </div>
+
+    `;
+}
+
+function applyRange() {
+    currentCustomType = "range";
+
+    currentStartDate = document.getElementById("startDate").value;
+
+    currentEndDate = document.getElementById("endDate").value;
+
+    currentFilterLabel = "📅 Rentang";
+
+    currentReportPage = 1;
+
+    closeFilterModal();
+
+    loadHomePage("laporan");
+}
+
+function applyDay() {
+    currentCustomType = "day";
+
+    currentStartDate = document.getElementById("dayDate").value;
+
+    currentEndDate = "";
+
+    currentFilterLabel = "📅 Hari";
+
+    currentReportPage = 1;
+
+    closeFilterModal();
+
+    loadHomePage("laporan");
+}
+
+function applyWeek() {
+    currentCustomType = "week";
+
+    currentStartDate = document.getElementById("weekDate").value;
+
+    currentEndDate = "";
+
+    currentFilterLabel = "📅 Minggu";
+
+    currentReportPage = 1;
+
+    closeFilterModal();
+
+    loadHomePage("laporan");
+}
+
+function applyMonth() {
+    currentCustomType = "month";
+
+    currentStartDate = document.getElementById("monthDate").value;
+
+    currentEndDate = "";
+
+    currentFilterLabel = "📅 Bulan";
+
+    currentReportPage = 1;
+
+    closeFilterModal();
+
+    loadHomePage("laporan");
+}
+
+function applyYear() {
+    currentCustomType = "year";
+
+    currentStartDate = document.getElementById("yearDate").value;
+
+    currentEndDate = "";
+
+    currentFilterLabel = "📅 Tahun";
+
+    currentReportPage = 1;
+
+    closeFilterModal();
+
+    loadHomePage("laporan");
 }
 
 /* ======================

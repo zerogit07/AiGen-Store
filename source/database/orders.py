@@ -233,15 +233,17 @@ async def get_report_summary():
 
 async def get_top_products(
     limit: int = 10,
-    filter_type: str = ""
+    filter_type: str = "",
+    custom_type: str = "",
+    start_date: str = "",
+    end_date: str = "",
 ):
     async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute(
-            "PRAGMA foreign_keys = ON"
-        )
+        await db.execute("PRAGMA foreign_keys = ON")
 
         where = ""
 
+        # filter bawaan
         if filter_type == "today":
             where = """
             AND DATE(o.created_at)=DATE('now')
@@ -283,6 +285,55 @@ async def get_top_products(
             )
             """
 
+        # custom
+        if custom_type == "range":
+            where = f"""
+            AND DATE(o.created_at)
+            BETWEEN
+            DATE('{start_date}')
+            AND
+            DATE('{end_date}')
+            """
+
+        elif custom_type == "day":
+            where = f"""
+            AND DATE(o.created_at)
+            =
+            DATE('{start_date}')
+            """
+
+        elif custom_type == "week":
+            week = start_date.split("-W")[1]
+
+            where = f"""
+            AND strftime(
+                '%W',
+                o.created_at
+            )
+            =
+            '{week}'
+            """
+
+        elif custom_type == "month":
+            where = f"""
+            AND strftime(
+                '%Y-%m',
+                o.created_at
+            )
+            =
+            '{start_date}'
+            """
+
+        elif custom_type == "year":
+            where = f"""
+            AND strftime(
+                '%Y',
+                o.created_at
+            )
+            =
+            '{start_date}'
+            """
+
         query = f"""
         SELECT
             s.name,
@@ -309,28 +360,40 @@ async def get_top_products(
         LIMIT ?
         """
 
-        async with db.execute(
-            query,
-            (limit,)
-        ) as cursor:
-
+        async with db.execute(query, (limit,)) as cursor:
             return await cursor.fetchall()
 
 
-async def get_history(limit: int = 10, offset: int = 0, filter_type: str = ""):
+async def get_history(
+    limit: int = 10,
+    offset: int = 0,
+    filter_type: str = "",
+    custom_type: str = "",
+    start_date: str = "",
+    end_date: str = "",
+):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("PRAGMA foreign_keys = ON")
 
         where = ""
 
+        # filter cepat
+
         if filter_type == "today":
             where = """
-            WHERE DATE(o.created_at)=DATE('now')
+            WHERE DATE(
+                o.created_at
+            )=
+            DATE(
+                'now'
+            )
             """
 
         elif filter_type == "week":
             where = """
-            WHERE DATE(o.created_at)>=DATE(
+            WHERE DATE(
+                o.created_at
+            )>=DATE(
                 'now',
                 '-7 day'
             )
@@ -341,7 +404,8 @@ async def get_history(limit: int = 10, offset: int = 0, filter_type: str = ""):
             WHERE strftime(
                 '%Y-%m',
                 o.created_at
-            )=strftime(
+            )=
+            strftime(
                 '%Y-%m',
                 'now'
             )
@@ -352,10 +416,67 @@ async def get_history(limit: int = 10, offset: int = 0, filter_type: str = ""):
             WHERE strftime(
                 '%Y',
                 o.created_at
-            )=strftime(
+            )=
+            strftime(
                 '%Y',
                 'now'
             )
+            """
+
+        # custom
+
+        if custom_type == "range":
+            where = f"""
+            WHERE DATE(
+                o.created_at
+            )
+            BETWEEN
+            DATE(
+                '{start_date}'
+            )
+            AND
+            DATE(
+                '{end_date}'
+            )
+            """
+
+        elif custom_type == "day":
+            where = f"""
+            WHERE DATE(
+                o.created_at
+            )=
+            DATE(
+                '{start_date}'
+            )
+            """
+
+        elif custom_type == "week":
+            week = start_date.split("-W")[1]
+
+            where = f"""
+            WHERE strftime(
+                '%W',
+                o.created_at
+            )=
+            '{week}'
+            """
+
+        elif custom_type == "month":
+            where = f"""
+            WHERE strftime(
+                '%Y-%m',
+                o.created_at
+            )=
+            '{start_date}'
+            """
+
+        elif custom_type == "year":
+            where = f"""
+            WHERE strftime(
+                '%Y',
+                o.created_at
+            )=
+            '{start_date}'
             """
 
         async with db.execute(
@@ -383,7 +504,8 @@ async def get_history(limit: int = 10, offset: int = 0, filter_type: str = ""):
 
             {where}
 
-            ORDER BY o.created_at DESC
+            ORDER BY
+            o.created_at DESC
 
             LIMIT ?
             OFFSET ?
