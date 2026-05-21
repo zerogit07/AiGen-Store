@@ -402,16 +402,28 @@
     transform: translate(-50%, -50%);
 
     width: 90%;
-
     max-width: 320px;
 
-    background: var(--card-bg);
+    background: #111 !important;
+
+    opacity: 1 !important;
+
+    border: 1px solid rgba(255, 255, 255, 0.08);
 
     border-radius: 18px;
 
     padding: 20px;
-}
 
+    backdrop-filter: none !important;
+
+    -webkit-backdrop-filter: none !important;
+
+    isolation: isolate;
+
+    z-index: 10000;
+
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+}
 .home-modal-content h3 {
     text-align: center;
 
@@ -567,24 +579,20 @@
 }
 /* =======================================
 */
-.filter-overlay {
-    position: absolute;
+.filter-overlay{
+    position:fixed;
 
-    inset: 0;
+    inset:0;
 
-    display: flex;
+    z-index:9998;
 
-    align-items: center;
+    display:flex;
 
-    justify-content: center;
+    align-items:center;
 
-    padding: 20px;
+    justify-content:center;
 
-    background: rgba(0, 0, 0, 0.65);
-
-    backdrop-filter: blur(5px);
-
-    -webkit-backdrop-filter: blur(5px);
+    background:rgba(0,0,0,.65);
 }
 
 .filter-box {
@@ -604,13 +612,7 @@
         0 0 0 1px rgba(255, 255, 255, 0.03),
         0 20px 60px rgba(0, 0, 0, 0.7);
 }
-.home-modal {
-    position: fixed;
 
-    inset: 0;
-
-    z-index: 9999;
-}
 .date-wrap {
     position: relative;
     margin-bottom: 16px;
@@ -631,26 +633,23 @@
     z-index: 2;
 }
 
-.custom-date{
-    text-align:center;
+.custom-date {
+    text-align: center;
 }
 
-.custom-date::-webkit-calendar-picker-indicator{
-    opacity:0;
-    width:0;
+.custom-date::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    width: 0;
 }
 
-.custom-date::-webkit-datetime-edit{
-    text-align:center;
+.custom-date::-webkit-datetime-edit {
+    text-align: center;
 }
 
-.custom-date::-webkit-date-and-time-value{
-    position:absolute;
+.custom-date::-webkit-date-and-time-value {
+    position: absolute;
 
-    left:50%;
+    left: 50%;
 
-    transform:
-        translateX(
-            -50%
-        );
+    transform: translateX(-50%);
 }
