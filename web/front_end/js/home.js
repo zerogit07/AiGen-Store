@@ -1,14 +1,22 @@
 // web/front_end/js/home.js
 
-var currentUserPage = 1;
-var currentReportPage = 1;
-var currentSearch = "";
-var currentFilter = "";
-var currentFilterLabel = "-- Filter --";
-var currentStartDate = "";
-var currentEndDate = "";
-var currentMonth = "";
-var currentCustomType = "";
+let currentUserPage = 1;
+
+let currentReportPage = 1;
+
+let currentSearch = "";
+
+let currentFilter = "";
+
+let currentFilterLabel = "-- Filter --";
+
+let currentStartDate = "";
+
+let currentEndDate = "";
+
+let currentMonth = "";
+
+let currentCustomType = "";
 
 async function loadHomePage(tab = "statistik") {
     try {
